@@ -66,7 +66,7 @@ A common supervised ANN training algorithm known as backpropagation iteratively 
 
 <p>This procedure is repeated for many training iterations until the rate of convergence of the loss function meets a predefined threshold. The backpropagation algorithm can therefore naturally be parallelized over both layers/nodes in the network and sequences of training inputs. </p>
 
-<p><Caffe>, a C++ library for deep learning that enables <CUDA> GPU computation on NVIDIA hardware, is currently one of the most popular frameworks for training ANNs in parallel. No comparable ANN training framework exists for the <Xeon Phi>, Intel’s co-processor competitor to the <NVIDIA Tesla>.</p>
+<p><a href="http://caffe.berkeleyvision.org/">Caffe</a>, a C++ library for deep learning that enables <a href="https://developer.nvidia.com/about-cuda">CUDA</a> GPU computation on NVIDIA hardware, is currently one of the most popular frameworks for training ANNs in parallel. No comparable ANN training framework exists for the <a href="http://www.intel.com/content/www/us/en/processors/xeon/xeon-phi-coprocessor-overview.html">Xeon Phi</a>, Intel’s co-processor competitor to the <a href="http://www.nvidia.com/object/why-choose-tesla.html">NVIDIA Tesla</a>.</p>
 
 <p>Most existing ANN frameworks convert the math involved in the back-propagation training algorithm to matrix operations and then call upon a linear algebra library to perform these computations. Caffe calls upon <cuBLAS> ,  the NVIDIA CUDA Basic Linear Algebra Subroutines library. While matrix operations are an easily understood abstraction of the ANN training math for humans, there is overhead associated with the in silico implementation of this matrix abstraction.</p>
 
