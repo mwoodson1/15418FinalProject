@@ -68,7 +68,7 @@ A common supervised ANN training algorithm known as backpropagation iteratively 
 
 <p><a href="http://caffe.berkeleyvision.org/">Caffe</a>, a C++ library for deep learning that enables <a href="https://developer.nvidia.com/about-cuda">CUDA</a> GPU computation on NVIDIA hardware, is currently one of the most popular frameworks for training ANNs in parallel. No comparable ANN training framework exists for the <a href="http://www.intel.com/content/www/us/en/processors/xeon/xeon-phi-coprocessor-overview.html">Xeon Phi</a>, Intel’s co-processor competitor to the <a href="http://www.nvidia.com/object/why-choose-tesla.html">NVIDIA Tesla</a>.</p>
 
-<p>Most existing ANN frameworks convert the math involved in the back-propagation training algorithm to matrix operations and then call upon a linear algebra library to perform these computations. Caffe calls upon <cuBLAS> ,  the NVIDIA CUDA Basic Linear Algebra Subroutines library. While matrix operations are an easily understood abstraction of the ANN training math for humans, there is overhead associated with the in silico implementation of this matrix abstraction.</p>
+<p>Most existing ANN frameworks convert the math involved in the backpropagation training algorithm to matrix operations and then call upon a linear algebra library to perform these computations. Caffe calls upon <a href="https://developer.nvidia.com/cuBLAS">cuBLAS</a>,  the NVIDIA CUDA Basic Linear Algebra Subroutines library. While matrix operations are an easily understood abstraction of the ANN training math for humans, there is overhead associated with the <i>in silico</i> implementation of this matrix abstraction.</p>
 
 <p>We plan to implement an optimized ANN training framework on the Xeon Phi that does not require the use of a matrix library.</p>
 
@@ -76,14 +76,14 @@ A common supervised ANN training algorithm known as backpropagation iteratively 
 <p>In a feed-forward ANN, which is a directed acyclic graph, the output of each node is dependent on the input weights from each incoming edge of the previous network layer. There are therefore significant data dependencies in training an ANN, and it is challenging to design an efficient parallel training implementation that obeys these dependencies.</p>
 
 <h3>Resources</h3>
-<p>We will develop our code on the new 418/618  <latedays> cluster. The cluster consists of 15 machines, each with a Xeon Phi 5110p co-processor board. A single Xeon Phi co-processor has 60 1 GHz cores, each with 4-way multithreading and 16-wide AVX512 instruction support.</p>
+<p>We will develop our code on the new 418/618  <code>latedays</code> cluster. The cluster consists of 15 machines, each with a Xeon Phi 5110p co-processor board. A single Xeon Phi co-processor has 60 1 GHz cores, each with 4-way multithreading and 16-wide AVX512 instruction support.</p>
 
 <p>We will implement CPU versions of both the sequential and parallel versions of feed-forward neural network training ourselves, though we may reference Caffe’s implementation of neural network operations when writing our code.</p>
 
 <p>To compare our framework to GPU implementations of ANN computations, we will train the same ANNs using the Caffe framework and NVIDIA’s GTX 780 GPU, found in the GHC41 machine in the GHC lab.</p>
 
 <h3>Goals and Deliverables</h3>
-<p>The goal of our project is to create a CPU-base framework for neural network training that rivals the speed and functionality of Caffe’s neural network implementations. We will deliver an optimized feed-forward ANN training framework for a single Xeon Phi co-processor that makes use of multi-threading and AVX vector intrinsics. We plan to implement the ANN training math without a linear algebra library to achieve optimal performance speed.  We will use several example data sets to demonstrate the speed-up achieved by using NeuroPhi to train an ANN instead of a sequential CPU algorithm. We hope to acquire datasets for which the CMU research community is currently using Caffe’s neural network framework.  We will then use these data sets to compare our NeuroPhi execution speed to Caffe’s single GPU execution speed.
+<p>We will deliver an optimized feed-forward ANN training framework for a single Xeon Phi co-processor that makes use of multi-threading and AVX vector intrinsics. We plan to implement the ANN training math without a linear algebra library to achieve optimal performance speed.  We will use several example data sets to demonstrate the speed-up achieved by using NeuroPhi to train an ANN instead of a sequential CPU algorithm. We hope to acquire datasets for which the CMU research community is currently using Caffe’s neural network framework.  We will then use these data sets to compare our NeuroPhi execution speed to Caffe’s single GPU execution speed.
 </p>
 <p>If time permits, we would like to implement the following features, listed in order of importance:</p>
 
