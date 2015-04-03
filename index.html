@@ -83,19 +83,19 @@ A common supervised ANN training algorithm known as backpropagation iteratively 
 <p>To compare our framework to GPU implementations of ANN computations, we will train the same ANNs using the Caffe framework and NVIDIA’s GTX 780 GPU, found in the GHC41 machine in the GHC lab.</p>
 
 <h3>Goals and Deliverables</h3>
-<p>We will deliver an optimized feed-forward ANN training framework for a single Xeon Phi co-processor that makes use of multi-threading and AVX vector intrinsics. We plan to implement the ANN training math without a linear algebra library to achieve optimal performance speed.  We will use several example data sets to demonstrate the speed-up achieved by using NeuroPhi to train an ANN instead of a sequential CPU algorithm. We hope to acquire datasets for which the CMU research community is currently using Caffe’s neural network framework.  We will then use these data sets to compare our NeuroPhi execution speed to Caffe’s single GPU execution speed.
+<p>We will deliver an optimized feed-forward ANN training framework for a single Xeon Phi co-processor that makes use of multi-threading and AVX vector intrinsics. We plan to implement the ANN training math without a linear algebra library to achieve optimal performance speed.  We will use several example data sets to demonstrate the speed-up achieved by using NeuroPhi to train an ANN instead of a sequential CPU algorithm. We hope to acquire datasets for which the CMU research community is currently using Caffe’s neural network framework.  We will then use these data sets to compare our NeuroPhi execution speed to Caffe’s single GPU execution speed. Graphs and charts of speedup relative to a serial and Caffe implementation will be provided.
 </p>
 <p>If time permits, we would like to implement the following features, listed in order of importance:</p>
 
 <ol>
-  <li>Extend our solution to use  a distributed memory architecture. This will allow us to fully exploit the latedays cluster and its compute power.</li>
+  <li>Extend our solution to use  a distributed memory architecture. This will allow us to fully exploit the <code>latedays</code> cluster and its compute power.</li>
   <li>Extend our solution to train recurrent neural networks, which are cyclic directed graphs capable of performing computations with history dependence/ memory.</li>
 </ol>
 
 <h3>Platform:</h3>
 <p>Intel’s Xeon Phi is a new, many-core platform for parallel applications that is growing in popularity, but currently has fewer learning libraries than its more established competitor, the NVIDIA Tesla. There is therefore a large market for the development of Xeon Phi frameworks. Xeon Phi computation has several potential advantages over GPU computation. First, the Xeon Phi runs Intel assembly code, just like the computer’s CPU, which means that no additional, proprietary compiler is required to build applications. At a higher level of abstraction, this means that the Xeon Phi supports all of the same syntax used by a standard CPU. Code written for a standard CPU can be ported without modification to the Xeon Phi, (and though it may not be executed efficiently), it will at least be executed correctly.</p>
 
-<p>Writing NeuroPhi for the Xeon Phi will allow us to use the standard set of C++ parallelization tools, including the <OpenMP> library for multi-threading and <ISPC> for vector intrinsics. If we extend NeuroPhi to support multi-machine, distributed memory computations, we could also use the <MPI> message passing library.</p>
+<p>Writing NeuroPhi for the Xeon Phi will allow us to use the standard set of C++ parallelization tools, including the <a href="http://openmp.org/openmp-faq.html#Content.OMPAPI">OpenMP</a> library for multi-threading and <a href="https://ispc.github.io/ for vector intrinsics">ISPC</a>. If we extend NeuroPhi to support multi-machine, distributed memory computations, we could also use the <a href="http://www.open-mpi.org/ message passing library">Open MPI</a>.</p>
 
 <h3>Schedule:<h3>
   <table border="1" style="width:100%">
