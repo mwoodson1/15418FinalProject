@@ -55,11 +55,11 @@ After the research portion and deciding upon the code to begin working from we h
 </p>
 
 <p>
-Markus: Begun benchmarking and writing code to improve the performance of a 2D convolution. The chosen strategy is to use Fast Fourier Transform(FFT's) to take the complexity of convolution from O(n^2) to O(nlogn). Along with the complexity decrease the FFT also lends itself quite nicely to parallism which we think can be exploited both at a high level (threads) and low level (SIMD execution). Currently we have a working naive FFT written in Matlab which we hope to port to C++ soon. 
+Markus: Began benchmarking and writing code to improve the performance of a 2D convolution. We will use Fast Fourier Transform(FFT's) to take the complexity of convolution from O(n^2) to O(nlogn). Along with the complexity decrease the FFT also lends itself quite nicely to parallelism which we think can be exploited both at a high level (threads) and low level (SIMD execution). Currently we have a working naive FFT written in Matlab which we hope to port to C++ soon. 
 </p>
 
 <p>
-Danielle: Begun researching datasets and getting the starter code and examples from the ConvNet code base working on latedays. Given that the codebase runs given a Matlab API and compiled MEX files there were a few issues but we hope to have them resolved within a day. The datasets we will be testing on will be the <a href="http://www.cs.utoronto.ca/~kriz/cifar.html">CIFAR10/100</a> and <a href="http://ufldl.stanford.edu/housenumbers/">SVHN</a> datasets.
+Danielle: Began researching datasets and getting the starter code and examples from the ConvNet code base working on latedays. Given that the codebase runs given a Matlab API and compiled MEX files there were a few issues, but we hope to have them resolved within a day. We will be testing on the <a href="http://www.cs.utoronto.ca/~kriz/cifar.html">CIFAR10/100</a> and <a href="http://ufldl.stanford.edu/housenumbers/">SVHN</a> datasets.
 </p>
 
 <h3>New Proposed Schedule</h3>
@@ -92,7 +92,10 @@ Since our project has shifted a bit we are off schedule but believe we should st
 </p>
 
 <h3>Competition Demo</h3>
-Given that training and running a CNN can take time, even for fast implementations, on demo day we hope to show graphs comparing the performance and training speed of commonly used CNN frameworks such as cudaConvNet and Caffe, to our FFT based CNN. Ideally we hope to show that compute power of CPU's is sufficient for large network training
+Given that training and running a CNN can take time, even for fast implementations, on demo day we hope to show graphs comparing the performance and training speed of commonly used CNN frameworks such as cudaConvNet and Caffe, to our FFT based CNN. Ideally we hope to show that compute power of CPU's is sufficient for large network training.
+
+<p>
+</p>
 
 <h1>Proposal</h1>
 
