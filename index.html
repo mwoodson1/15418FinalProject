@@ -45,10 +45,73 @@
 <a href="checkpoint.html">Checkpoint</a>
 
 <h3>Summary</h3>
+We are trying to speed up the computation done in a convolutional neural network(CNN),in particular for everyday image sizes, by making some key optimizations and parallelizing whereever possible. The target hardware was CPU as opposed to the popular GPU CNN training algorithms. The intent is to show that one does not need a GPU and external libraries such as CudNN to perform efficient computation of CNN training. The key optimizations we decided to make are doing a convolution as a product in the fourier domain and parallel mini-batch training across cores.
 
 <h3>Background</h3>
+<p>Artificial neural networks (ANNs) are a biologically-inspired machine learning method of solving classes of problems that require learning. Given a class of simple functions <i>F</i> and a set of observations <i>O</i>, an ANN will learn the transfer functions for each node or neuron in one or more hidden layers of a network such that the network optimally solves a specified problem. The ability to learn using a hierarchy of simple transfer functions has made ANNs key computational models for applications such as computer vision and speech recognition. However, large neural networks--which may have several hidden layers, thousands to millions of nodes per layer, and thousands to millions of edges between layers--are very computationally expensive to train.
+
+A common supervised ANN training algorithm known as backpropagation iteratively updates the weights of the network to minimize a loss function--the difference between a known, desired network output and the current network output--by determining the contribution of each input weight and bias in the network to the loss function. The basic steps of backpropagation are as follows</p>
+
+<ul>
+  <li>Initialize the input layer of the network to include an input for bias</li>
+  <li>Propagate the activity forward for each layer of the network</li>
+  <li>Calculate the error at the output layer</li>
+  <li>Back-propagate the error through the other network layers</li>
+  <li>Update the weights of the network</li>
+</ul>
+
+<p>
+A convolutional neural network is similar to a classic ANN but allows for different types of layers in the network. Some of the key layers are outlines below:
+</p>
+
+<b>Convolutional layer</b>
+<p>
+  This layers input parameters are a set of learnable filters. Each one of this filters is then convolved with the input volume to produce its output. The process of convolution can be expressed by the following formula in 1D
+</br>
+  <img src="1dConvolution.jpg">
+</br>
+  In 2D this can be visualized as the following:
+</br>
+  <img src="kernel_convolution.jpg">
+</br>
+  The naive implementation of this is the following:
+  <pre><code>for w in 1..W
+  for h in 1..H
+    for x in 1..K
+      for y in 1..K
+        output(w, h) += input(w+x, h+y) * filter(x, y)
+      end
+    end
+  end
+end
+</code></pre>
+  Most CNN libraries use clever tricks to manipulate the matrices involved in the convolution and take advantage of fast matrix multiplication with cblas. In particular one can "stack" the filters on top of one another and do 1 large convolution instead of several smaller ones. More on this can be read -----ADD LINK HERE TO CAFFE CONV IMP-------
+</p>
+
+</br>
+<b>Pooling layer</b>
+<p>
+  In order to reduce the variance, these layers simply take the max or average value of a feature over a region of the image. This ensures the same result will be obtained even when image features have small transitions.
+</p>
+
+</br>
+<b>Fully connected</b>
+<p>
+This is a classic ANN layer and can be visualized below:
+</p>
+</br>
+<img src="fully_connected.png">
+<p>
+</p>
+
+<p>
+CNN's have had great success in image classification and face recognition tasks but most, if not all, of the implementations used GPU implementations for speed. 
+</p>
 
 <h3>Approach</h3>
+We decided to optimize the convolutional layer and implement a parallel mini-batch training to speed up training. In the convolutional layer we changed the algorithm to use Fast Fourier Transforms which turns the convolution operator into a simple element-wise product of the FFT of the image and FFT of the kernel. We also have begun parallelizing the batch-processing by having every core handle a batch of images to learn from.
+
+
 
   </body>
 </html>
