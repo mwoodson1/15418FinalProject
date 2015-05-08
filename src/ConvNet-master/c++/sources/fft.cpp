@@ -6,8 +6,8 @@
 #include <stdlib.h>
 #include <math.h>
 #include <omp.h>
-//#include <cilk>
-//#include <cilk.h>
+#include <cilk/cilk.h>
+#include <cilk/reducer_opadd.h>
 /*-------------------------------------------------------------------------
    Perform a 2D FFT inplace given a complex 2D array
    The direction dir, 1 for forward, -1 for reverse
@@ -17,21 +17,15 @@
 */
 
 //TODO
-//- Work on parallelization
 //- Get interface to starter code 
 //- All of the functions do in-place changes, we might need to change that???
-//- Run performance tests for different sized kernels on 32x32
-//- Run performance tests for different sized kernels on real sized images.
 //- Figure out how to write a program using the Xeon Phi's on latedays
 //- Parallelize different parts of the starter neural net code
 //   - We could parallelize batch learning
-//   - A lot of his functions use loops I think can be vectorized
-//   - 
-// ... misc. stuff may be added later
 
 //#define DEBUG 1
 #define USE_FFT 1
-//#define NO_RECURSIVE 1
+#define NO_RECURSIVE 1
 
 const double PI = 3.141592653589793238460;
 
@@ -45,26 +39,35 @@ int FFT2D(C2D& x,int nx,int ny,int dir);
 void makeSize(C2D& kern,int imgW, int imgH, int kernW, int kernH);
 int Powerof2(int n,int *m,int *twopm);
 
-bool convolve2DSlow(C2D& in, C2D& out, int dataSizeX, int dataSizeY,
+bool convolve2DSlow(C2D& input, C2D& out, int dataSizeX, int dataSizeY,
                     C2D& kernel, int kernelSizeX, int kernelSizeY)
 {
-  int i, j, m, n, mm, nn;
+  int mm, nn;
   int kCenterX, kCenterY;                         // center index of kernel
-  Complex sum;                                      // temp accumulation buffer
+  //Complex sum;                                      // temp accumulation buffer
   int rowIndex, colIndex;
-  
+  int i,j,m,n;
+
+  //cilk::reducer< cilk::op_add<double> > sum(0);
+  int sum = 0;
   // check validity of params
   
   // find center position of kernel (half of kernel size)
   kCenterX = kernelSizeX / 2;
   kCenterY = kernelSizeY / 2;
   
+  #pragma omp parallel for
+  //#pragma vector
   for(i=0; i < dataSizeY; ++i){                // rows
+    #pragma omp parallel for private(sum)
     for(j=0; j < dataSizeX; ++j){            // columns
-      sum = 0.0;                            // init to 0 before sum
+      //cilk::reducer< cilk::op_add<double> > sum(0);                           
+      sum = 0;
+      //#pragma omp parallel for
+      #pragma vector
       for(m=0; m < kernelSizeY; ++m){      // kernel rows
 	mm = kernelSizeY - 1 - m;       // row index of flipped kernel
-	
+        #pragma vector
 	for(n=0; n < kernelSizeX; ++n){  // kernel columns
 	  nn = kernelSizeX - 1 - n;   // column index of flipped kernel
 	  
@@ -74,10 +77,12 @@ bool convolve2DSlow(C2D& in, C2D& out, int dataSizeX, int dataSizeY,
 	  
 	  // ignore input samples which are out of bound
 	  if(rowIndex >= 0 && rowIndex < dataSizeY && colIndex >= 0 && colIndex < dataSizeX)
-	    sum += in[rowIndex][colIndex] * kernel[mm][nn];
-	    //sum += in[dataSizeX * rowIndex + colIndex] * kernel[kernelSizeX * mm + nn];
+	    //*sum += in[rowIndex][colIndex].real() * kernel[mm][nn].real();
+	    //#pragma omp atomic capture
+	    sum += input[rowIndex][colIndex].real() * kernel[mm][nn].real();
 	}
       }
+      //out[i][j] = fabs(sum.get_value());
       out[i][j] = fabs(sum);
     }
   }
@@ -87,31 +92,40 @@ bool convolve2DSlow(C2D& in, C2D& out, int dataSizeX, int dataSizeY,
 
 void makeSize(C2D& kern,int imgW, int imgH, int kernW, int kernH){
   //We will assume the kernel and image are square
+  int row;
   int dif = imgW - kernW;
   if(dif == 0) return;
 
   kern.resize(imgH);
   CArray tmp(imgW,0.0);
-  for(int row=0; row<imgH; row++){
+  //#pragma omp parallel for if(imgH > 32)
+  #pragma loop_count min(32), max(2048), avg(1024)
+  for(row=0; row<imgH; row++){
     kern[row].resize(imgW,0.0);
   }
   return;
 }
 
 void conv(C2D& img, C2D& kernel,int imgW, int imgH, int kernW, int kernH){
+  int i, j;
   int newDim = imgW+kernW-1;
   int nextPow2 = 1;
   while(nextPow2 < newDim) nextPow2 <<= 1;
-  makeSize(img,nextPow2,nextPow2,imgW, imgH);
-
-  //Need to pad the kernel to make it the same dimension as the image
   makeSize(kernel,nextPow2,nextPow2,kernW,kernH);
+  makeSize(img,nextPow2,nextPow2,imgW, imgH);
+  //Need to pad the kernel to make it the same dimension as the image
+  //makeSize(kernel,nextPow2,nextPow2,kernW,kernH);
+  //cilk_sync;
   //Take FFT2D of img and kernel
-  cilk_spawn FFT2D(img,nextPow2,nextPow2,1);
   FFT2D(kernel,nextPow2,nextPow2,1);
+  FFT2D(img,nextPow2,nextPow2,1);
   //Point-wise multiplications
-  for(int i=0; i<nextPow2; i++){
-    for(int j=0; j<nextPow2; j++){
+  //This can be vectorized
+  //#pragma omp parallel for if(nextPow2 > 32)
+#pragma loop_count min(50),max(2048),avg(1024)
+  for(i=0; i<nextPow2; i++){
+    //#pragma simd
+    for(j=0; j<nextPow2; j++){
       img[i][j] = img[i][j] * kernel[i][j];
     }
   }
@@ -121,20 +135,25 @@ void conv(C2D& img, C2D& kernel,int imgW, int imgH, int kernW, int kernH){
   int dif = newDim - imgW;
 
   //Erase the first dif rows
-  for(int i=0; i<dif; i++){
+#pragma loop_count min(0), max(1024), avg(500)
+  for(i=0; i<dif; i++){
     img.erase(img.begin());
   }
 
   //Erase the first dif cols
-  for(int i=0; i<imgH; i++){
-    for(int j=0; j<dif; j++){
+  //#pragma omp parallel for if(imgH > 32)
+#pragma loop_count min(32), max(1024)
+  for(i=0; i<imgH; i++){
+    for(j=0; j<dif; j++){
       img[i].erase(img[i].begin());
     }
   }
 
   //Resize to original image size
   img.resize(imgH);
-  cilk_for(int i=0; i<imgH; i++){
+  #pragma omp parallel for if(imgH > 32)
+  //#pragma loop_count min(32), max(1050)
+  for(i=0; i<imgH; i++){
     img[i].resize(imgW);
   }
 }
@@ -142,73 +161,45 @@ void conv(C2D& img, C2D& kernel,int imgW, int imgH, int kernW, int kernH){
 //2D FFT Function
 int FFT2D(C2D& x,int nx,int ny,int dir)
 {
+  int i, j;
   CArray tmp(nx,0.0);
-  cilk_for(int j=0;j<ny;j++){
-    cilk_for(int i=0;i<nx;i++){
+  int len2 = (int)log2((double)ny);
+  for(j=0;j<ny;j++){
+    #pragma simd
+    for(i=0;i<nx;i++){
       tmp[i] = x[i][j];
     }
-    int len2 = (int)log2((double)nx); //log(size)
     FFT(tmp,len2,dir);
-    cilk_for(int i=0;i<nx;i++){
+    #pragma simd
+    for(i=0;i<nx;i++){
       x[i][j] = tmp[i];
     }
   }
-  
-  CArray tmp2(ny,0.0);
-  cilk_for(int i=0;i<nx;i++){
-    cilk_for(int j=0;j<ny;j++){
-      tmp2[j] = x[i][j];
-    }
-    int len2 = (int)log2((double)ny);
-    FFT(tmp2,len2,dir);
-    cilk_for(int j=0;j<ny;j++){
-      x[i][j] = tmp2[j];
-    }
+
+  len2 = (int)log2((double)nx);
+  #pragma omp parallel for if(ny > 32)
+  for(i=0;i<ny;i++){
+    FFT(x[i],len2,dir);
   }
   return(1);
 }
 
-/*-------------------------------------------------------------------------
-   This computes an in-place complex-to-complex FFT
-   x and y are the real and imaginary arrays of 2^m points.
-   dir =  1 gives forward transform
-   dir = -1 gives reverse transform
-
-     Formula: forward
-                  N-1
-                  ---
-              1   \          - j k 2 pi n / N
-      X(n) = ---   >   x(k) e                    = forward transform
-              N   /                                n=0..N-1
-                  ---
-                  k=0
-
-      Formula: reverse
-                  N-1
-                  ---
-                  \          j k 2 pi n / N
-      X(n) =       >   x(k) e                    = forward transform
-                  /                                n=0..N-1
-                  ---
-                  k=0
-*/
-
-
 void FFT(CArray& x, int m, int dir){
   #ifdef NO_RECURSIVE
-  long i, i1, i2,j, k, l, l1, l2, n;
+  long i,j,l, i1, i2, k, l1, l2, n;
   complex <double> tx, t1, u, c;
 
    /*Calculate the number of points */
    n = 1;
-   for(i = 0; i < m; i++) 
-      n <<= 1;   
+   //for(i = 0; i < m; i++) 
+   n <<= m;   
 
    /* Do the bit reversal */
    i2 = n >> 1;
    j = 0;
 
-   for (i = 0; i < n-1 ; i++){
+   //#pragma omp parallel for shared(x,k,j)
+   for(i = 0; i < n-1 ; i++){
       if (i < j)
          swap(x[i], x[j]);
 
@@ -226,32 +217,36 @@ void FFT(CArray& x, int m, int dir){
    c.real(-1.0);
    c.imag(0.0);
    l2 = 1;
-   for (l = 0; l < m; l++) {
-      l1 = l2;
-      l2 <<= 1;
-      u.real(1.0);
-      u.imag(0.0);
-
-      for (j = 0; j < l1; j++) {
-         for (i = j; i < n; i += l2) {
-            i1 = i + l1;
-            t1 = u * x[i1];
-            x[i1] = x[i] - t1; 
-            x[i] += t1;
-         }
-
-         u = u * c;
-      }
-
-      c.imag(sqrt((1.0 - c.real()) / 2.0));
-      if (dir == 1)
-         c.imag(-c.imag());
-      c.real(sqrt((1.0 + c.real()) / 2.0));
+   #pragma omp parallel for if(m > 100)
+   for(l = 0; l < m; l++) {
+     l1 = 1 << l;
+     l2 = 1 << (l+1);
+     u.real(1.0);
+     u.imag(0.0);
+     //#pragma loop_count min(0),max(15)
+     for(j = 0; j < l1; j++) {
+       //#pragma omp parallel for shared(x)
+       //#pragma simd
+       for(i = j; i < n; i += l2) {
+	 i1 = i + l1;
+	 t1 = u * x[i1];
+	 x[i1] = x[i] - t1;
+	 x[i] += t1;
+       }
+       
+       u = u * c;
+     }
+     
+     c.imag(sqrt((1.0 - c.real()) / 2.0));
+     if (dir == 1)
+       c.imag(-c.imag());
+     c.real(sqrt((1.0 + c.real()) / 2.0));
    }
-
+   
    // Scaling for inverse transform  
    if (dir == -1) {
-      for (i = 0; i < n; i++)
+     #pragma simd
+     for(i = 0; i < n; i++)
          x[i] /= n;      
    }   
    return;
@@ -259,8 +254,11 @@ void FFT(CArray& x, int m, int dir){
 #else
    /* Below is an implementation that uses Recursion */
    int N = (int)x.size();
+   int half = N/2;
+   Complex t;
    //If Inverse then conjugate the data 
    if(dir == -1){
+     #pragma simd
      for(int i=0; i<N; i++){
        x[i] = std::conj(x[i]);
      }
@@ -268,16 +266,18 @@ void FFT(CArray& x, int m, int dir){
 
    if(N <= 1) return;
    
-   CArray odd(N/2,0.0);
-   CArray even(N/2,0.0);
+   CArray odd(half,0.0);
+   CArray even(half,0.0);
    
    int t1, t2;
    int size = (int)log2((double)(N/2));
    t1 = 0;
    t2 = 0;
    
-   //#pragma omp parallel for
-   cilk_for(int i=0; i<N; i++){
+   //the below will break code
+   //#pragma omp parallel for if(N >100) firstprivate(t1,t2)
+   #pragma loop_count min(2), max(500)
+   for(int i=0; i<N; i++){
      if(i%2 == 0){
        even[t1] = x[i];
        t1++;
@@ -293,22 +293,22 @@ void FFT(CArray& x, int m, int dir){
    FFT(odd,size,dir);
    cilk_sync;
    
-   //#pragma omp parallel for
-   cilk_for(size_t k=0; k < N/2; ++k){
-     Complex t = std::polar(1.0, -2*PI*k/N) * odd[k];
+   //REPLACED N/2 WITH HALF
+   //#pragma omp parallel for if(N>50)
+   for(size_t k=0; k < half; ++k){
+     t = std::polar(1.0, -2*PI*k/N) * odd[k];
      x[k] = even[k] + t;
-     x[k+N/2] = even[k] - t;
+     x[k+half] = even[k] - t;
    }
 
-   
+   double N2 = (double)N;
    if(dir == -1){
-     //#pragma omp parallel for
-     cilk_for(int i=0; i<N; i++){
+     for(int i=0; i<N; i++){
        x[i] = std::conj(x[i]);
-       x[i] = x[i]/((double)N);
+       x[i] = x[i]/N2;
      }
    }
-
+   
   return;
 #endif
 }
@@ -368,11 +368,6 @@ double testFFT(int imageSize, int kernelSize){
   //FFT Conv
 #ifdef USE_FFT
   conv(testImg, testKern,imageSize,imageSize,kernelSize,kernelSize);
-#else
-  convolve2DSlow(testImg, testImg2, imageSize, imageSize, testKern, kernelSize, kernelSize);
-#endif
-  double end = omp_get_wtime();
-
   #ifdef DEBUG
   std::cout << "The below is convolved" << std::endl;
   for(int i=0; i<imageSize; i++){
@@ -382,7 +377,8 @@ double testFFT(int imageSize, int kernelSize){
     std::cout << std::endl;
   }
   #endif
-
+#else
+  convolve2DSlow(testImg, testImg2, imageSize, imageSize, testKern, kernelSize, kernelSize);
   #ifdef DEBUG
   std::cout << "The below is convolved" << std::endl;
   for(int i=0; i<imageSize; i++){
@@ -392,6 +388,9 @@ double testFFT(int imageSize, int kernelSize){
     std::cout << std::endl;
   }
   #endif
+#endif
+  double end = omp_get_wtime();
+
   return end-start;
 }
 
@@ -401,142 +400,221 @@ int main(){
   //Might measure memory usage later
   int imageSize = 32; //32x32
   int kernelSize = 3; //3x3
-  double t1,t2,t3,avgT;
+  int i;
+  double t1,t2,t3,t4,t5,tTotal,avgT;
+  tTotal = 0;
+
+#ifdef USE_FFT
+  std::cout << "Using FFT: ";
+#ifdef NO_RECURSIVE
+  std::cout << "Non-recursive" << std::endl;
+#else
+  std::cout << "Recursive" << std::endl;
+#endif
+#else
+  std::cout << "Normal Conv" << std::endl;
+#endif
 
   /* -------------------------- Small Image Results ------------------------ */
-  std::cout << "Small (32x32) FFTConv Results" << std::endl;
+  std::cout << "Small (32x32)" << std::endl;
   std::cout <<  "_____________________" << std::endl;
   std::cout << "3x3   |   "; 
   //32x32x3x3
-  t1 = testFFT(imageSize,kernelSize);
-  t2 = testFFT(imageSize,kernelSize);
-  t3 = testFFT(imageSize,kernelSize);
-  avgT = (t1+t2+t3)/3;
+  for(i=0; i<10; i++){
+    t1 = testFFT(imageSize,kernelSize);
+    tTotal += t1;
+  }
+  avgT = tTotal/10;
+  tTotal = 0;
   std::cout << avgT;
 
   std::cout <<  std::endl;
   std::cout << "5x5   |   ";
   //32x32x5x5
   kernelSize = 5;
-  t1 = testFFT(imageSize,kernelSize);
-  t2 = testFFT(imageSize,kernelSize);
-  t3 = testFFT(imageSize,kernelSize);
-  avgT = (t1+t2+t3)/3;
+  for(i=0; i<10; i++){
+    t1 = testFFT(imageSize,kernelSize);
+    tTotal += t1;
+  }
+  avgT = tTotal/10;
+  tTotal = 0;
   std::cout << avgT;
 
   std::cout <<  std::endl;
   std::cout << "7x7   |   ";
   //32x32x7x7
   kernelSize = 7;
-  t1 = testFFT(imageSize,kernelSize);
-  t2 = testFFT(imageSize,kernelSize);
-  t3 = testFFT(imageSize,kernelSize);
-  avgT = (t1+t2+t3)/3;
+  for(i=0; i<10; i++){
+    t1 = testFFT(imageSize,kernelSize);
+    tTotal += t1;
+  }
+  avgT = tTotal/10;
+  tTotal = 0;
   std::cout << avgT;
 
   std::cout <<  std::endl;
   std::cout << "9x9   |   ";
   //32x32x9x9
   kernelSize = 9;
-  t1 = testFFT(imageSize,kernelSize);
-  t2 = testFFT(imageSize,kernelSize);
-  t3 = testFFT(imageSize,kernelSize);
-  avgT = (t1+t2+t3)/3;
+  for(i=0; i<10; i++){
+    t1 = testFFT(imageSize,kernelSize);
+    tTotal += t1;
+  }
+  avgT = tTotal/10;
+  tTotal = 0;
   std::cout << avgT;
 
   std::cout <<  std::endl;
   std::cout << "15x15 |   ";
   //32x32x15x15
   kernelSize = 15;
-  t1 = testFFT(imageSize,kernelSize);
-  t2 = testFFT(imageSize,kernelSize);
-  t3 = testFFT(imageSize,kernelSize);
-  avgT = (t1+t2+t3)/3;
+  for(i=0; i<10; i++){
+    t1 = testFFT(imageSize,kernelSize);
+    tTotal += t1;
+  }
+  avgT = tTotal/10;
+  tTotal = 0;
   std::cout << avgT << std::endl;
   std::cout << "_________________________" << std::endl;
 
 
   /* -------------------------- Large Image Results ------------------------ */
+  kernelSize = 3;
+  imageSize = 400;
+  std::cout << "Large (400x400) " << std::endl;
+  std::cout <<  "_____________________" << std::endl;
+  std::cout << "3x3   |   "; 
+  //32x32x3x3
+  for(i=0; i<10; i++){
+    t1 = testFFT(imageSize,kernelSize);
+    tTotal += t1;
+  }
+  avgT = tTotal/10;
+  tTotal = 0;
+  std::cout << avgT;
+
+  std::cout << std::endl;
+  kernelSize = 5;
+  imageSize = 400;
+  std::cout << "5x5   |   "; 
+  //32x32x3x3
+  for(i=0; i<10; i++){
+    t1 = testFFT(imageSize,kernelSize);
+    tTotal += t1;
+  }
+  avgT = tTotal/10;
+  tTotal = 0;
+  std::cout << avgT;
+
+  std::cout << std::endl;
+  kernelSize = 7;
+  imageSize = 400;
+  std::cout << "7x7   |   "; 
+  //32x32x3x3
+  for(i=0; i<10; i++){
+    t1 = testFFT(imageSize,kernelSize);
+    tTotal += t1;
+  }
+  avgT = tTotal/10;
+  tTotal = 0;
+  std::cout << avgT;
+
+
+  std::cout << std::endl;
   kernelSize = 9;
   imageSize = 400;
-  std::cout << "Large (32x32) FFTConv Results" << std::endl;
-  std::cout <<  "_____________________" << std::endl;
   std::cout << "9x9   |   "; 
   //32x32x3x3
-  t1 = testFFT(imageSize,kernelSize);
-  t2 = testFFT(imageSize,kernelSize);
-  t3 = testFFT(imageSize,kernelSize);
-  avgT = (t1+t2+t3)/3;
+  for(i=0; i<10; i++){
+    t1 = testFFT(imageSize,kernelSize);
+    tTotal += t1;
+  }
+  avgT = tTotal/10;
+  tTotal = 0;
   std::cout << avgT;
 
   std::cout <<  std::endl;
   std::cout << "15x15   |   ";
   //32x32x5x5
   kernelSize = 15;
-  t1 = testFFT(imageSize,kernelSize);
-  t2 = testFFT(imageSize,kernelSize);
-  t3 = testFFT(imageSize,kernelSize);
-  avgT = (t1+t2+t3)/3;
+  for(i=0; i<10; i++){
+    t1 = testFFT(imageSize,kernelSize);
+    tTotal += t1;
+  }
+  avgT = tTotal/10;
+  tTotal = 0;
   std::cout << avgT;
 
   std::cout <<  std::endl;
   std::cout << "35x35   |   ";
   //32x32x7x7
   kernelSize = 35;
-  t1 = testFFT(imageSize,kernelSize);
-  t2 = testFFT(imageSize,kernelSize);
-  t3 = testFFT(imageSize,kernelSize);
-  avgT = (t1+t2+t3)/3;
+  for(i=0; i<10; i++){
+    t1 = testFFT(imageSize,kernelSize);
+    tTotal += t1;
+  }
+  avgT = tTotal/10;
+  tTotal = 0;
   std::cout << avgT;
 
   std::cout <<  std::endl;
   std::cout << "65x65   |   ";
   //32x32x9x9
   kernelSize = 65;
-  t1 = testFFT(imageSize,kernelSize);
-  t2 = testFFT(imageSize,kernelSize);
-  t3 = testFFT(imageSize,kernelSize);
-  avgT = (t1+t2+t3)/3;
+  for(i=0; i<10; i++){
+    t1 = testFFT(imageSize,kernelSize);
+    tTotal += t1;
+  }
+  avgT = tTotal/10;
+  tTotal = 0;
   std::cout << avgT;
 
   std::cout <<  std::endl;
   std::cout << "95x95 |   ";
   //32x32x15x15
   kernelSize = 95;
-  t1 = testFFT(imageSize,kernelSize);
-  t2 = testFFT(imageSize,kernelSize);
-  t3 = testFFT(imageSize,kernelSize);
-  avgT = (t1+t2+t3)/3;
+  for(i=0; i<10; i++){
+    t1 = testFFT(imageSize,kernelSize);
+    tTotal += t1;
+  }
+  avgT = tTotal/10;
+  tTotal = 0;
   std::cout << avgT << std::endl;
 
   std::cout <<  std::endl;
   std::cout << "125x125 |   ";
   //32x32x15x15
   kernelSize = 125;
-  t1 = testFFT(imageSize,kernelSize);
-  t2 = testFFT(imageSize,kernelSize);
-  t3 = testFFT(imageSize,kernelSize);
-  avgT = (t1+t2+t3)/3;
+  for(i=0; i<10; i++){
+    t1 = testFFT(imageSize,kernelSize);
+    tTotal += t1;
+  }
+  avgT = tTotal/10;
+  tTotal = 0;
   std::cout << avgT << std::endl;
 
   std::cout <<  std::endl;
   std::cout << "155x155 |   ";
   //32x32x15x15
   kernelSize = 155;
-  t1 = testFFT(imageSize,kernelSize);
-  t2 = testFFT(imageSize,kernelSize);
-  t3 = testFFT(imageSize,kernelSize);
-  avgT = (t1+t2+t3)/3;
+  for(i=0; i<10; i++){
+    t1 = testFFT(imageSize,kernelSize);
+    tTotal += t1;
+  }
+  avgT = tTotal/10;
+  tTotal = 0;
   std::cout << avgT << std::endl;
 
   std::cout <<  std::endl;
   std::cout << "250x250 |   ";
   //32x32x15x15
   kernelSize = 250;
-  t1 = testFFT(imageSize,kernelSize);
-  t2 = testFFT(imageSize,kernelSize);
-  t3 = testFFT(imageSize,kernelSize);
-  avgT = (t1+t2+t3)/3;
+  for(i=0; i<10; i++){
+    t1 = testFFT(imageSize,kernelSize);
+    tTotal += t1;
+  }
+  avgT = tTotal/10;
+  tTotal = 0;
   std::cout << avgT << std::endl;
   std::cout << "_________________________" << std::endl;
   
