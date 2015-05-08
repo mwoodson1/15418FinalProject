@@ -40,144 +40,15 @@
         </div>
 
         <h3>
-<h1>Checkpoint</h1>
-<h3>Work Completed So Far</h3>
-<p>
-After researching how the Caffe framework trains ANNs we realized they use a subclass of ANNs called a Convolutional Neural Network (CNNs). The details of such a network can be found here. CNNs make use of convolutional network layers of spatially contiguous receptive fields over which a single filter is applied. This allows trained CNNs to achieve properties such as translation invariant image identification while tuning relatively few parameters.  After some testing and further research we found the convolutional layer to be the bottle neck of the system. Thus, to improve the speed of the system, we have decided to change our project slightly to optimize this layer. This involves improving the computation of a convolution between an image and given filter.
-</p>
 
-<p>
-Given the increased complexity of writing a CNN from scratch, we have decided to use base code provided by the ConvNet library, which supports serial CNN training on a CPU and parallel CNN training on a GPU. We will extend this framework to support parallel CPU co-processor computation on the Xeon Phi. We have also been in touch with Cary and professor Kayvon about programming for the Xeon Phi's as that will be our target device. We hope to get a few toy examples working on the Xeon Phi to acquaint ourselves with working with them soon.
-</p>
+<a href="proposal.html">Proposal</a>
+<a href="checkpoint.html">Checkpoint</a>
 
-<p>
-Both Markus and Danielle were involved in the research of CNN training theory and existing parallel and serial CNN training frameworks. We have since divided the work as follows:
-</p>
+<h3>Summary</h3>
 
-<p>
-Markus: Began benchmarking and writing code to improve the performance of a 2D convolution. We will use Fast Fourier Transform(FFT's) to take the complexity of convolution from O(n^2) to O(nlogn). Along with the complexity decrease the FFT also lends itself quite nicely to parallelism which we think can be exploited both at a high level (threads) and low level (SIMD execution). Currently we have a working naive FFT written in Matlab which we hope to port to C++ soon. 
-</p>
-
-<p>
-Danielle: Began researching datasets and getting the starter code and examples from the ConvNet code base working on latedays. Given that the codebase runs given a Matlab API and compiled MEX files there were a few issues, but we hope to have them resolved within a day. We will be testing on the <a href="http://www.cs.utoronto.ca/~kriz/cifar.html">CIFAR10/100</a> and <a href="http://ufldl.stanford.edu/housenumbers/">SVHN</a> datasets.
-</p>
-
-<h3>New Proposed Schedule</h3>
-<table border="1" style="width:100%">
-  <tr>
-    <td>4/20-4/23</td>
-    <td>Get ConvNet example code working and perform initial benchmarks(Danielle). Finish porting Matlab FFT code to C++ and work on parallelization(Markus). Both work on making toy code for Xeon Phi.</td>    
-  </tr>
-  <tr>
-    <td>4/23-4/27</td>
-    <td>Benchmark FFT version of neural network code for multiple filter sizes(Danielle). Work on multi-threading the FFT code(Markus).</td> 
-  </tr>
-  <tr>
-    <td>4/27-4/30</td>
-    <td>Finish multi-threading and introduce vector intrinsics. Benchmark other parallel FFT implementations to compare to ours.</td>    
-  </tr>
-    <tr>
-    <td>4/30-5/5</td>
-    <td>Misc other optimizations we can make to the code and finish up anything remaining. If time permits we would like to train a CNN for larger images such as the ImageNet dataset.</td>    
-  </tr>
-    <tr>
-    <td>5/5-5/11</td>
-    <td>Work on presentation and perform final analysis.</td>    
-  </tr>
-</table>
-
-<h3>Checkpoint Progress</h3>
-<p>
-Since our project has shifted a bit we are off schedule but believe we should still be able to meet our newly proposed schedule and look forward to the results we get!
-</p>
-
-<h3>Competition Demo</h3>
-Given that training and running a CNN can take time, even for fast implementations, on demo day we hope to show graphs comparing the performance and training speed of commonly used CNN frameworks such as cudaConvNet and Caffe, to our FFT based CNN. Ideally we hope to show that compute power of CPU's is sufficient for large network training.
-
-<p>
-</p>
-
-<h1>Proposal</h1>
-
-<h3>Summary:</h3>
-<p>We plan to implement optimized, parallel training of artificial neural networks on Intel’s Xeon Phi co-processor. We will compare the performance and utility of our NeuroPhi framework with the neural network training implementation in Caffe, a widely-used GPU deep learning framework.</p>
-
-<!--<pre><code>$ cd your_repo_root/repo_name-->
-<!--$ git fetch origin
-$ git checkout gh-pages
-</code></pre>
-
-<p>If you're using the GitHub for Mac, simply sync your repository and you'll see the new branch.</p>
--->
 <h3>Background</h3>
-<p>Artificial neural networks (ANNs) are a biologically-inspired machine learning method of solving classes of problems that require learning. Given a class of simple functions <i>F</i> and a set of observations <i>O</i>, an ANN will learn the transfer functions for each node or neuron in one or more hidden layers of a network such that the network optimally solves a specified problem. The ability to learn using a hierarchy of simple transfer functions has made ANNs key computational models for applications such as computer vision and speech recognition. However, large neural networks--which may have several hidden layers, thousands to millions of nodes per layer, and thousands to millions of edges between layers--are very computationally expensive to train.
 
-A common supervised ANN training algorithm known as backpropagation iteratively updates the weights of the network to minimize a loss function--the difference between a known, desired network output and the current network output--by determining the contribution of each input weight and bias in the network to the loss function. The basic steps of backpropagation are as follows</p>
-
-<ul>
-  <li>Initialize the input layer of the network to include an input for bias</li>
-  <li>Propagate the activity forward for each layer of the network</li>
-  <li>Calculate the error at the output layer</li>
-  <li>Back-propagate the error through the other network layers</li>
-  <li>Update the weights of the network</li>
-</ul>
-
-<p>This procedure is repeated for many training iterations until the rate of convergence of the loss function meets a predefined threshold. The backpropagation algorithm can therefore naturally be parallelized over both layers/nodes in the network and sequences of training inputs. </p>
-
-<p><a href="http://caffe.berkeleyvision.org/">Caffe</a>, a C++ library for deep learning that enables <a href="https://developer.nvidia.com/about-cuda">CUDA</a> GPU computation on NVIDIA hardware, is currently one of the most popular frameworks for training ANNs in parallel. No comparable ANN training framework exists for the <a href="http://www.intel.com/content/www/us/en/processors/xeon/xeon-phi-coprocessor-overview.html">Xeon Phi</a>, Intel’s co-processor competitor to the <a href="http://www.nvidia.com/object/why-choose-tesla.html">NVIDIA Tesla</a>.</p>
-
-<p>Most existing ANN frameworks convert the math involved in the backpropagation training algorithm to matrix operations and then call upon a linear algebra library to perform these computations. Caffe calls upon <a href="https://developer.nvidia.com/cuBLAS">cuBLAS</a>,  the NVIDIA CUDA Basic Linear Algebra Subroutines library. While matrix operations are an easily understood abstraction of the ANN training math for humans, there is overhead associated with the <i>in silico</i> implementation of this matrix abstraction.</p>
-
-<p>We plan to implement an optimized ANN training framework on the Xeon Phi that does not require the use of a matrix library.</p>
-
-<h3>Challenges</h3>
-<p>In a feed-forward ANN, which is a directed acyclic graph, the output of each node is dependent on the input weights from each incoming edge of the previous network layer. There are therefore significant data dependencies in training an ANN, and it is challenging to design an efficient parallel training implementation that obeys these dependencies.</p>
-
-<h3>Resources</h3>
-<p>We will develop our code on the new 418/618  <code>latedays</code> cluster. The cluster consists of 15 machines, each with a Xeon Phi 5110p co-processor board. A single Xeon Phi co-processor has 60 1 GHz cores, each with 4-way multithreading and 16-wide AVX512 instruction support.</p>
-
-<p>We will implement CPU versions of both the sequential and parallel versions of feed-forward neural network training ourselves, though we may reference Caffe’s implementation of neural network operations when writing our code.</p>
-
-<p>To compare our framework to GPU implementations of ANN computations, we will train the same ANNs using the Caffe framework and NVIDIA’s GTX 780 GPU, found in the GHC41 machine in the GHC lab.</p>
-
-<h3>Goals and Deliverables</h3>
-<p>We will deliver an optimized feed-forward ANN training framework for a single Xeon Phi co-processor that makes use of multi-threading and AVX vector intrinsics. We plan to implement the ANN training math without a linear algebra library to achieve optimal performance speed.  We will use several example data sets to demonstrate the speed-up achieved by using NeuroPhi to train an ANN instead of a sequential CPU algorithm. We hope to acquire datasets for which the CMU research community is currently using Caffe’s neural network framework.  We will then use these data sets to compare our NeuroPhi execution speed to Caffe’s single GPU execution speed. Graphs and charts of speedup relative to a serial and Caffe implementation will be provided.
-</p>
-<p>If time permits, we would like to implement the following features, listed in order of importance:</p>
-
-<ol>
-  <li>Extend our solution to use  a distributed memory architecture. This will allow us to fully exploit the <code>latedays</code> cluster and its compute power.</li>
-  <li>Extend our solution to train recurrent neural networks, which are cyclic directed graphs capable of performing computations with history dependence/ memory.</li>
-</ol>
-
-<h3>Platform:</h3>
-<p>Intel’s Xeon Phi is a new, many-core platform for parallel applications that is growing in popularity, but currently has fewer learning libraries than its more established competitor, the NVIDIA Tesla. There is therefore a large market for the development of Xeon Phi frameworks. Xeon Phi computation has several potential advantages over GPU computation. First, the Xeon Phi runs Intel assembly code, just like the computer’s CPU, which means that no additional, proprietary compiler is required to build applications. At a higher level of abstraction, this means that the Xeon Phi supports all of the same syntax used by a standard CPU. Code written for a standard CPU can be ported without modification to the Xeon Phi, and (though it may not be executed efficiently,) it will at least be executed correctly.</p>
-
-<p>Writing NeuroPhi for the Xeon Phi will allow us to use the standard set of C++ parallelization tools, including the <a href="http://openmp.org/openmp-faq.html#Content.OMPAPI">OpenMP</a> library for multi-threading and <a href="https://ispc.github.io/">ISPC</a> for vector intrinsics. If we extend NeuroPhi to support multi-machine, distributed memory computations, we could also use the <a href="http://www.open-mpi.org/">Open MPI</a> message passing library.</p>
-
-<h3>Schedule:</h3>
-  <table border="1" style="width:100%">
-  <tr>
-    <td>4/2-4/9</td>
-    <td>Research ANN training algorithm. Begin implementation of a serial version of ANN training algorithm.</td>    
-  </tr>
-  <tr>
-    <td>4/9-4/16</td>
-    <td>Finish serial implementation of ANN training algorithm. Develop parallel implementation of ANN training algorithm using vector intrinsics on a single CPU processor.</td> 
-  </tr>
-  <tr>
-    <td>4/16-4/23</td>
-    <td>Extend parallel implementation to support multi-core execution on the Xeon Phi and multi-threading.</td>    
-  </tr>
-    <tr>
-    <td>4/23-4/30</td>
-    <td>Compare NeuroPhi performance on several datasets to serial CPU and Caffe performance. Make small optimizations. Begin work on reach goals.</td>    
-  </tr>
-    <tr>
-    <td>4/30-5/8</td>
-    <td>Work on reach goals. Write the final report, finalize demos, and update the webpage.</td>    
-  </tr>
-</table>
+<h3>Approach</h3>
 
   </body>
 </html>
