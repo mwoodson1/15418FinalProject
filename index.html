@@ -45,7 +45,8 @@
 <a href="checkpoint.html">Checkpoint</a>
 
 <h3>Summary</h3>
-Neurophi is a C++ framework with a MATLAB interface for doing fast, parallel convolutional neural network (CNN) training, particularly for large image sizes. Unlike the existing parallel CNN training frameworks that rely on CUDA and GPU computation, NeuroPhi's target hardware is a CPU and Intel Xeon Phi Coprocessor. NeuroPhi therefore supports code written for standard x86 architecture and can be extended using standard C++ parallelization tools including OpenMP, Cilk, and ISPC. NeuroPhi also differentiates itself from existing parallel CNN training frameworks by computing convolutions in the Fourier domain, which is optimal for large images, and by parallelizing mini-batch training of the network across cores.
+<p>Neurophi is a C++ framework with a MATLAB interface for doing fast, parallel convolutional neural network (CNN) training, particularly for large image sizes. Unlike the existing parallel CNN training frameworks that rely on CUDA and GPU computation, NeuroPhi's target hardware is a CPU and Intel Xeon Phi Coprocessor. NeuroPhi therefore supports code written for standard x86 architecture and can be extended using standard C++ parallelization tools including OpenMP, Cilk, and ISPC. NeuroPhi also differentiates itself from existing parallel CNN training frameworks by computing convolutions in the Fourier domain, which is optimal for large images and kernels, and by parallelizing mini-batch training of the network across cores. </p>
+<p></p>
 
 <h3>Background</h3>
 <p>Artificial neural networks (ANNs) are a biologically-inspired machine learning method of solving classes of problems that require learning. Given a class of simple functions <i>F</i> and a set of observations <i>O</i>, an ANN will learn the transfer functions for each node or neuron in one or more hidden layers of a network such that the network optimally solves a specified problem. The ability to learn using a hierarchy of simple transfer functions has made ANNs key computational models for applications such as computer vision and speech recognition. However, large neural networks--which may have several hidden layers, thousands to millions of nodes per layer, and thousands to millions of edges between layers--are very computationally expensive to train.
@@ -66,7 +67,7 @@ A convolutional neural network is similar to a classic ANN but allows for differ
 
 <b>Convolutional layer</b>
 <p>
-  This layers input parameters are a set of learnable filters. Each one of this filters is then convolved with the input volume to produce its output. The process of convolution can be expressed by the following formula in 1D
+  This layers input parameters are a set of learnable filters. Each one of these filters is then convolved with the input volume to produce its output. The process of convolution can be expressed by the following formula in 1D
 </br>
   <img src="1dConvolution.jpg">
 </br>
@@ -74,7 +75,7 @@ A convolutional neural network is similar to a classic ANN but allows for differ
 </br>
   <img src="kernel_convolution.jpg">
 </br>
-  The naive implementation of this is the following:
+  The following is a naive implementation of 2D convolution:
   <pre><code>for w in 1..W
   for h in 1..H
     for x in 1..K
@@ -91,7 +92,7 @@ end
 </br>
 <b>Pooling layer</b>
 <p>
-  In order to reduce the variance, these layers simply take the max or average value of a feature over a region of the image. This ensures the same result will be obtained even when image features have small transitions.
+  In order to reduce output variance, pooling layers simply take the max or average value of a feature over a region of the image. This ensures that the network will have the same output for small translations of the input image.
 </p>
 
 </br>
@@ -109,7 +110,7 @@ CNN's have had great success in image classification and face recognition tasks 
 </p>
 
 <h3>Approach</h3>
-We decided to optimize the convolutional layer and implement a parallel mini-batch training to speed up training. In the convolutional layer we changed the algorithm to use Fast Fourier Transforms which turns the convolution operator into a simple element-wise product of the FFT of the image and FFT of the kernel. We also have begun parallelizing the batch-processing by having every core handle a batch of images to learn from.
+We decided to optimize the convolutional layer and implement parallel mini-batch training to speed up training. NeuroPhi's convolutional layer uses Fast Fourier Transforms, which transform the convolution operator into a simple element-wise product of the FFT of the image and FFT of the kernel. We also have begun parallelizing batch-training by having every core concurrently train on an independent batch of images. The results of the parallel batch-training are then reduced across cores and the network weights are updated accordingly.
 
 
 
