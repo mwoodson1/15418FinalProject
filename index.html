@@ -4,7 +4,7 @@
     <script type="text/javascript" src="http://latex.codecogs.com/latexit.js"></script>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <title>NeuroPhi by Markus Woodson and Dannielle Rager</title>
+    <title>NeuroPhi by Markus Woodson and Danielle Rager</title>
     <link rel="stylesheet" href="stylesheets/styles.css">
     <link rel="stylesheet" href="stylesheets/pygment_trac.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
@@ -45,7 +45,7 @@
 <a href="checkpoint.html">Checkpoint</a>
 
 <h3>Summary</h3>
-We are trying to speed up the computation done in a convolutional neural network(CNN),in particular for everyday image sizes, by making some key optimizations and parallelizing whereever possible. The target hardware was CPU as opposed to the popular GPU CNN training algorithms. The intent is to show that one does not need a GPU and external libraries such as CudNN to perform efficient computation of CNN training. The key optimizations we decided to make are doing a convolution as a product in the fourier domain and parallel mini-batch training across cores.
+Neurophi is a C++ framework with a MATLAB interface for doing fast, parallel convolutional neural network (CNN) training, particularly for large image sizes. Unlike the existing parallel CNN training frameworks that rely on CUDA and GPU computation, NeuroPhi's target hardware is a CPU and Intel Xeon Phi Coprocessor. NeuroPhi therefore supports code written for standard x86 architecture and can be extended using standard C++ parallelization tools including OpenMP, Cilk, and ISPC. NeuroPhi also differentiates itself from existing parallel CNN training frameworks by computing convolutions in the Fourier domain, which is optimal for large images, and by parallelizing mini-batch training of the network across cores.
 
 <h3>Background</h3>
 <p>Artificial neural networks (ANNs) are a biologically-inspired machine learning method of solving classes of problems that require learning. Given a class of simple functions <i>F</i> and a set of observations <i>O</i>, an ANN will learn the transfer functions for each node or neuron in one or more hidden layers of a network such that the network optimally solves a specified problem. The ability to learn using a hierarchy of simple transfer functions has made ANNs key computational models for applications such as computer vision and speech recognition. However, large neural networks--which may have several hidden layers, thousands to millions of nodes per layer, and thousands to millions of edges between layers--are very computationally expensive to train.
