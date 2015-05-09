@@ -86,7 +86,7 @@ A convolutional neural network is similar to a classic ANN but allows for differ
   end
 end
 </code></pre>
-  Most CNN libraries use clever tricks to manipulate the matrices involved in the convolution and take advantage of fast matrix multiplication with cblas. In particular one can "stack" the filters on top of one another and do 1 large convolution instead of several smaller ones. More on this can be read -----ADD LINK HERE TO CAFFE CONV IMP-------
+  Most CNN libraries use clever tricks to manipulate the matrices involved in the convolution and take advantage of fast matrix multiplication with cblas. In particular one can "stack" the filters on top of one another and do 1 large convolution instead of several smaller ones. More on this can be read <!-- -----ADD LINK HERE TO CAFFE CONV IMP------- -->
 </p>
 
 </br>
@@ -98,7 +98,7 @@ end
 </br>
 <b>Fully connected</b>
 <p>
-This is a classic ANN layer and can be visualized below:
+This is a classic ANN layer, visualized below:
 </p>
 </br>
 <img src="fully_connected.png">
@@ -111,7 +111,7 @@ CNN's have had great success in image classification and face recognition tasks 
 
 <h3>Approach</h3>
 We decided to optimize the convolutional layer and implement parallel mini-batch training to speed up training. NeuroPhi's convolutional layer uses Fast Fourier Transforms, which transform the convolution operator into a simple element-wise product of the FFT of the image and FFT of the kernel. We also have begun parallelizing batch-training by having every core concurrently train on an independent batch of images. The results of the parallel batch-training are then reduced across cores and the network weights are updated accordingly.
-
+<p></p>
 <h3>Results</h3>
 <p>We compared three parallel implementations of image convolution: the naive, time domain implementation shown above, a recursive FFT implementation, and an unrolled FFT implementation. The runtimes of all three implementations on the latedays cluster as a function of kernel size are shown below for 32x32 images.</p>
 <img src="LateDaysResults_SmallImages.png">
