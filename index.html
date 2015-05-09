@@ -113,8 +113,11 @@ CNN's have had great success in image classification and face recognition tasks 
 We decided to optimize the convolutional layer and implement parallel mini-batch training to speed up training. NeuroPhi's convolutional layer uses Fast Fourier Transforms, which transform the convolution operator into a simple element-wise product of the FFT of the image and FFT of the kernel. We also have begun parallelizing batch-training by having every core concurrently train on an independent batch of images. The results of the parallel batch-training are then reduced across cores and the network weights are updated accordingly.
 
 <h3>Results</h3>
-<p>We three compared parallelized implementations of image convolution: the naive, time domain implementation shown above, a recursive FFT implementation, and an unrolled FFT implementation. The runtimes of all three implementations on the latedays cluster as a function of kernel size are shown below for 32x32 images.</p>
-<img src="LateDaysResults_SmallImages.pdf">
+<p>We compared three parallel implementations of image convolution: the naive, time domain implementation shown above, a recursive FFT implementation, and an unrolled FFT implementation. The runtimes of all three implementations on the latedays cluster as a function of kernel size are shown below for 32x32 images.</p>
+<img src="LateDaysResults_SmallImages.png">
+<p></p>
+<p>We observe that the time-domain convolutional layer implementation outperforms both FFT implementations for small kernel sizes, but the unrolled FFT begins to outperform the time domain implementation as kernel size increases. The effeciency of convolutions in the Fourier domain is dependent on image size as well as kernel size. Though many popular neural network image datasets use 32x32, many images that one might want to classify with a CNN in practice are much larger. The run times for the three convolutional layer implementations for 512x512 images as a function of kernel size are shown below. FFT implementations far outperform the time domain implementation for large images and kernel sizes.</p>
+<img src="LateDaysResults_LargeImages.png">
 
 
 
