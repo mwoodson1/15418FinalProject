@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "net.h"
+#include <iostream>
 #include "layer_i.h"
 #include "layer_j.h"
 #include "layer_c.h"
@@ -117,8 +118,12 @@ void Net::Train(const mxArray *mx_data, const mxArray *mx_labels) {
     StartTimer();
     //MatGPU::StartCudaTimer();
     size_t offset = 0;
-    for (size_t batch = 0; batch < numbatches; ++batch) {        
-      size_t batchsize = MIN(train_num - offset, params_.batchsize_);      
+#pragma loop_count(469)
+    for (size_t batch = 0; batch < numbatches; ++batch) {
+      std::cout << "max batches is" << numbatches << std::endl;
+      std::cout << batch << " and " << offset << std::endl;
+      size_t batchsize = MIN(train_num - offset, params_.batchsize_);
+      offset = batch*batchsize;
       UpdateWeights(epoch, false);
       data_batch.resize(batchsize, data_.size2());
       labels_batch.resize(batchsize, labels_.size2());      
@@ -126,17 +131,19 @@ void Net::Train(const mxArray *mx_data, const mxArray *mx_labels) {
       SubSet(labels_, labels_batch, offset, true);
       ftype error1, error2;
       InitActiv(data_batch);
-      Forward(pred_batch, 1);            
+      Forward(pred_batch, 1);
       InitDeriv(labels_batch, error1);
+      //Need this to be atomic?
       trainerrors_(epoch, 0) += error1;
       Backward();
       InitDeriv2(error2);
+      //May need this to be atomic as well 
       trainerrors_(epoch, 1) += error2;
       if (beta > 0) {
         Forward(pred_batch, 3);
       }
       UpdateWeights(epoch, true); 
-      offset += batchsize;
+      //offset += batchsize;
       if (params_.verbose_ == 2) {
         mexPrintInt("Epoch", (int) epoch + 1);
         mexPrintInt("Batch", (int) batch + 1);

@@ -85,7 +85,10 @@ void LayerScal::Forward(Layer *prev_layer, int passnum) {
     #if COMP_REGIME == 1
       #pragma omp parallel for
     #endif  
-    for (int k = 0; k < batchsize_; ++k) {      
+    for (int k = 0; k < batchsize_; ++k) {
+      #if COMP_REGIME == 1
+      #pragma omp parallel for
+      #endif
       for (size_t i = 0; i < outputmaps_; ++i) {
         if (function_ == "mean") {
           MeanScale(prev_activ[k][i], scale_, stride_, activ[k][i]);

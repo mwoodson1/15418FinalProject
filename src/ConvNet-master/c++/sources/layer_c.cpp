@@ -17,6 +17,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <omp.h>
 #include "layer_c.h"
 
 LayerConv::LayerConv() {
@@ -111,7 +112,10 @@ void LayerConv::Forward(Layer *prev_layer, int passnum) {
     #if COMP_REGIME == 1
       #pragma omp parallel for
     #endif    
-    for (int k = 0; k < batchsize_; ++k) {    
+    for (int k = 0; k < batchsize_; ++k) {
+      #if COMP_REGIME == 1
+      #pragma omp parallel for
+      #endif
       for (size_t i = 0; i < outputmaps_; ++i) {        
         for (size_t j = 0; j < prev_layer->outputmaps_; ++j) {
           Mat act_mat(mapsize_);
@@ -152,7 +156,10 @@ void LayerConv::Backward(Layer *prev_layer) {
     #if COMP_REGIME == 1
       #pragma omp parallel for
     #endif  
-    for (int k = 0; k < batchsize_; ++k) {    
+    for (int k = 0; k < batchsize_; ++k) {
+      #if COMP_REGIME == 1
+      #pragma omp parallel for
+      #endif
       for (size_t i = 0; i < outputmaps_; ++i) {      
         for (size_t j = 0; j < prev_layer->outputmaps_; ++j) {                        
           Mat der_mat(prev_layer->mapsize_);
@@ -182,14 +189,16 @@ void LayerConv::CalcWeights(Layer *prev_layer, int passnum) {
     InitMaps(prev_layer->activ_mat_, prev_layer->mapsize_, prev_activ); 
     InitMaps(weights_der, filtersize_, filters_der);
     InitMaps(deriv_mat_, mapsize_, deriv);
-    for (size_t i = 0; i < outputmaps_; ++i) {
-      for (size_t j = 0; j < prev_layer->outputmaps_; ++j) {                
+    size_t i,j;
+    int k;
+    for (i = 0; i < outputmaps_; ++i) {
+      for (j = 0; j < prev_layer->outputmaps_; ++j) {                
         Mat fil_der(filtersize_);
         fil_der.assign(0);      
         #if COMP_REGIME == 1
           #pragma omp parallel for
         #endif
-        for (int k = 0; k < batchsize_; ++k) {
+        for (k = 0; k < batchsize_; ++k) {
           Mat ker_mat(filtersize_);
           Filter(prev_activ[k][j], deriv[k][i], padding_, false, ker_mat);        
           #if COMP_REGIME == 1
@@ -223,6 +232,7 @@ void LayerConv::CalcWeights(Layer *prev_layer, int passnum) {
 
 void LayerConv::InitWeights(Weights &weights, size_t &offset, bool isgen) {  
   size_t num_weights = length_prev_;
+  #pragma simd
   for (size_t i = 0; i < numdim_; ++i) {
     num_weights *= filtersize_[i];
   }
@@ -262,6 +272,7 @@ void LayerConv::GetWeights(Mat &weights, size_t &offset) const {
 
 size_t LayerConv::NumWeights() const {
   size_t num_weights = length_prev_;
+  #pragma vector
   for (size_t i = 0; i < numdim_; ++i) {
     num_weights *= filtersize_[i];
   }

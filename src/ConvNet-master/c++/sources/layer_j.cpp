@@ -75,7 +75,8 @@ void LayerJitt::Init(const mxArray *mx_layer, Layer *prev_layer) {
     defval_ = mexGetScalar(mexGetField(mx_layer, "defval"));    
   } else {  
     // check that the transformed image is always inside the original one
-    std::vector<ftype> maxsize(numdim_, 0);    
+    std::vector<ftype> maxsize(numdim_, 0);
+    #pragma simd
     for (size_t i = 0; i < numdim_; ++i) {
       maxsize[i] = (ftype) (mapsize_[i] - 1) * scale_[i];      
     }
@@ -94,6 +95,7 @@ void LayerJitt::Init(const mxArray *mx_layer, Layer *prev_layer) {
       maxsize[1] = maxrad * maxcos;    
     }
     std::vector<ftype> oldmapsize(numdim_, 0);
+    #pragma simd
     for (size_t i = 0; i < numdim_; ++i) { 
       oldmapsize[i] = (ftype) prev_layer->mapsize_[i];
     }

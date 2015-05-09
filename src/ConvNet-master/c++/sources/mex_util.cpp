@@ -80,6 +80,7 @@ std::vector<size_t> mexGetDimensions(const mxArray *mx_array) {
   size_t dimnum = mexGetDimensionsNum(mx_array);
   std::vector<size_t> dim(dimnum);
   const mwSize *pdim = mxGetDimensions(mx_array);
+  #pragma vector
   for (size_t i = 0; i < dimnum; ++i) {
     dim[i] = (size_t) pdim[i];    
   }
@@ -89,6 +90,7 @@ std::vector<size_t> mexGetDimensions(const mxArray *mx_array) {
 size_t mexGetNumel(const mxArray *mx_array) {
   std::vector<size_t> dim = mexGetDimensions(mx_array);
   size_t numel = 1;
+  #pragma vector
   for (size_t i = 0; i < dim.size(); ++i) {
     numel *= dim[i];
   }
