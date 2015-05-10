@@ -45,7 +45,7 @@
 <a href="checkpoint.html">Checkpoint</a>
 
 <h3>Summary</h3>
-<p>Neurophi is a C++ framework with a MATLAB interface for doing fast, parallel convolutional neural network (CNN) training, particularly for large image sizes. Unlike the existing parallel CNN training frameworks that rely on CUDA and GPU computation, NeuroPhi's target hardware is a CPU and Intel Xeon Phi Coprocessor. NeuroPhi therefore supports code written for standard x86 architecture and can be extended using standard C++ parallelization tools including OpenMP, Cilk, and ISPC. NeuroPhi also differentiates itself from existing parallel CNN training frameworks by computing convolutions in the Fourier domain, which is optimal for large images and kernels, and by parallelizing mini-batch training of the network across cores. </p>
+<p>Neurophi is a C++ framework with a MATLAB interface for doing fast, parallel convolutional neural network (CNN) training, particularly for large image sizes such as those in <a href="http://www.image-net.org/">ImageNet</a>, one of the premiere neural network training image sets. Unlike the existing parallel CNN training frameworks that rely on CUDA and GPU computation, NeuroPhi's target hardware is a CPU and Intel Xeon Phi Coprocessor. NeuroPhi therefore supports code written for standard x86 architecture and can be extended using standard C++ parallelization tools including OpenMP, Cilk, and ISPC. NeuroPhi also differentiates itself from existing parallel CNN training frameworks by computing convolutions in the Fourier domain, which is optimal for large images and kernels, and by parallelizing mini-batch training of the network across cores. </p>
 <p></p>
 
 <h3>Background</h3>
