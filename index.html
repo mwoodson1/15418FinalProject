@@ -45,11 +45,11 @@
 <a href="checkpoint.html">Checkpoint</a>
 
 <h3>Summary</h3>
-<p>Neurophi is a C++ framework with a MATLAB interface for doing fast, parallel convolutional neural network (CNN) training, particularly for large image sizes such as those in <a href="http://www.image-net.org/">ImageNet</a>, one of the premier neural network training image sets. Unlike the existing parallel CNN training frameworks that rely on CUDA and GPU computation, NeuroPhi's target hardware is a CPU and Intel Xeon Phi Coprocessor. NeuroPhi therefore supports code written for standard x86 architecture and can be extended using standard C++ parallelization tools including OpenMP, Cilk, and ISPC. NeuroPhi also differentiates itself from existing parallel CNN training frameworks by computing convolutions in the Fourier domain, which is optimal for large images and kernels, and by parallelizing mini-batch training of the network across cores. </p>
+<p>Neurophi is a C++ framework with a MATLAB interface for doing fast, parallel convolutional neural network (CNN) training, particularly for large image sizes such as those in <a href="http://www.image-net.org/">ImageNet</a>, one of the premier neural network training image sets. Unlike the existing parallel CNN training frameworks that rely on CUDA and GPU computation, NeuroPhi's target hardware is a CPU and Intel Xeon Phi Coprocessor. NeuroPhi therefore supports code written for standard x86 architecture and can be extended using standard C++ parallelization tools including OpenMP, Cilk, and ISPC. NeuroPhi differentiates itself from existing parallel CNN training frameworks by computing convolutions in the Fourier domain, which is optimal for large images and kernels. </p>
 <p></p>
 
 <h3>Background</h3>
-<p>Artificial neural networks (ANNs) are a biologically-inspired machine learning method of solving classes of problems that require learning. Given a class of simple functions <i>F</i> and a set of observations <i>O</i>, an ANN will learn the transfer functions for each node or neuron in one or more hidden layers of a network such that the network optimally solves a specified problem. The ability to learn using a hierarchy of simple transfer functions has made ANNs key computational models for applications such as computer vision and speech recognition. However, large neural networks--which may have several hidden layers, thousands to millions of nodes per layer, and thousands to millions of edges between layers--are very computationally expensive to train.
+<p>Artificial neural networks (ANNs) are a biologically-inspired machine learning method of solving classes of problems that require learning. Given a class of simple functions <i>F</i> and a set of observations <i>O</i>, an ANN will learn the transfer functions for each node or neuron in one or more hidden layers of a network such that the network optimally performs feature extraction and classification. The ability to learn using a hierarchy of simple transfer functions has made ANNs key computational models for applications such as computer vision and speech recognition. However, large neural networks--which may have several hidden layers, thousands to millions of nodes per layer, and thousands to millions of edges between layers--are very computationally expensive to train.
 
 A common supervised ANN training algorithm known as backpropagation iteratively updates the weights of the network to minimize a loss function--the difference between a known, desired network output and the current network output--by determining the contribution of each input weight and bias in the network to the loss function. The basic steps of backpropagation are as follows</p>
 
@@ -62,12 +62,12 @@ A common supervised ANN training algorithm known as backpropagation iteratively 
 </ul>
 
 <p>
-A convolutional neural network is similar to a classic artificial neural network, but allows for different types of layers in the network. Some of the key layers are outlines below:
+Convolutional neural networks are a subclass of feed-forward ANNs that reduce the number of parameters required to do efficient feature extraction by applying the same filter(s) to several contiguous regions of an image. The feature extraction phase of the learning process may have many layers, including:
 </p>
 
-<b>Convolutional layer</b>
+<b>Convolutional layers</b>
 <p>
-  This layers input parameters are a set of learnable filters. Each one of these filters is then convolved with the input volume to produce its output. The process of convolution can be expressed by the following formula in 1D
+  The input parameters of convolutional layers are a set of learnable filters. Each one of these filters is then convolved with the input volume to produce its output. The process of convolution can be expressed by the following formula in 1D
 </br>
   <img src="1dConvolution.jpg">
 </br>
@@ -86,7 +86,7 @@ A convolutional neural network is similar to a classic artificial neural network
   end
 end
 </code></pre>
-  Most CNN libraries use clever tricks to manipulate the matrices involved in the convolution and take advantage of fast matrix multiplication with cblas. In particular one can "stack" the filters on top of one another and do 1 large convolution instead of several smaller ones.  <!-- -----More on this can be read ADD LINK HERE TO CAFFE CONV IMP------- -->
+  Most CNN libraries, including <a href="http://caffe.berkeleyvision.org/doxygen/classcaffe_1_1ConvolutionLayer.html">Caffe</a>,  use linear algebra tricks to manipulate the matrices involved in the convolution and take advantage of fast matrix multiplication with cblas. In particular one can "stack" the filters on top of one another and do 1 large convolution instead of several smaller ones.
 </p>
 
 </br>
