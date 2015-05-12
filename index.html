@@ -113,12 +113,10 @@ These layers consist of the classic artificial neural network computational unit
 <p>
 </p>
 
-<p>
-CNN's have had great success in image classification and face recognition tasks but most, if not all, of the implementations used GPU implementations for speed. 
-</p>
-
 <h3>Approach</h3>
-We began our work from the existing <a href="https://github.com/sdemyanov/ConvNet">ConvNet</a> framework, which supports serial CNN training on a CPU, very minimal parallelization for CNN training on a CPU, and GPU CNN training using <a href="https://code.google.com/p/cuda-convnet2/">CudaConvnet</a>. We aimed to dramatically increase the parallelization of the CPU version of ConvNet, make it suitable for doing CNN training/classification on large images, and offload some of its computations to the Xeon Phi coprocessor.  We determined that most of the time during network training was spent on convolutional layer computations. We therefore decided to focus our efforts on optimizing the parallelization of the actual convolution operation. NeuroPhi's convolutional layer uses Fast Fourier Transforms, which transform the convolution operator into a simple element-wise product of the FFT of the image and FFT of the kernel. We also parallelized the image batch-training process by doing concurrent training on the images within a batch. The results of the training across images are then reduced across cores and the network weights are updated accordingly.
+<p>We began our work from the existing <a href="https://github.com/sdemyanov/ConvNet">ConvNet</a> framework, which supports serial CNN training on a CPU, very minimal parallelization for CNN training on a CPU, and GPU CNN training using <a href="https://code.google.com/p/cuda-convnet2/">CudaConvnet</a>. We aimed to dramatically increase the parallelization of the CPU version of ConvNet, make it suitable for doing CNN training/classification on large images, and offload some of its computations to the Xeon Phi coprocessor.</p>
+<p>Neural network training consists of forward propagation, backwards propagation, and weight updates of the various layeys of the network. We timed ConvNet's serial CPU implementation of CNN training in the computationally intensive stages of forward propagation, backwards propagation, and weight updates for the convolutional, fully-connected, and scaling layers, and determined that most of the time during network training was spent on convolutional layer computations. Back propgation through the convolutional layer was particularly slow, and this training stage is dominated by image convolutions. We therefore decided to focus our efforts on optimizing the parallelization of the actual convolution operation.</p>
+<p>NeuroPhi's convolutional layer uses Fast Fourier Transforms, which transform the convolution operator into a simple element-wise product of the FFT of the image and FFT of the kernel. While time domain convolution is O(n^2), the FFT implementation is only O(nlogn).</p>
 <p></p>
 <h3>Results</h3>
 The results below were obtained by running code on a single node of <code>latedays</code>, on two, six-core Xeon e5-2620 v3 processors.
