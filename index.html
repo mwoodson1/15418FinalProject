@@ -136,6 +136,11 @@ All results below were obtained by running code on a single node of <code>lateda
 </div>
 
 <p>Serial implementation to parallel implementation speed-ups for the three algorithms are shown below. </p>
+<div>
+    <a href="https://plot.ly/~dmrager/167/" target="_blank" title="Speedup vs. Kernel Size" style="display: block; text-align: center;"><img src="https://plot.ly/~dmrager/167.png" alt="Speedup vs. Kernel Size" style="max-width: 100%;width: 525px;"  width="525" onerror="this.onerror=null;this.src='https://plot.ly/404.png';" /></a>
+    <script data-plotly="dmrager:167" src="https://plot.ly/embed.js" async></script>
+</div>
+
 <p>Our fastest convolution performance was acheived using the unrolled, vectorized FFT with the complex component convolution trick previously described, manual control of the thread count to match the number of execution contexts on a latedays machine, and setting the <code>THREAD_AFFINITY</code> compiler flag to <code>SCATTER</code>. This was unusual behavior as one would think having the data in each thread being sent to different cores would hinder performance. With more time, we would like to investigate why this aided performance.</p>
 <p>The figure below compares performance of our fastest parallel unrolled FFT to well known parallel CNN training frameworks Facebook FFT, CudaConvNet2, and Caffe. Benchmark times were take from the following location: <a href="https://github.com/soumith/convnet-benchmarks">benchmarks</a>. Timings are for a single pass through 5 convolution layers for a 128x128 image and 11x11 kernel. Note that the NeuroPhi was actually tested on 9x9 and 15x15 kernels and that our 11x11 kernel time is an interpolation of our time between these two values. However, the estimated 11x11 kernel time is consistent with the rest of our data. GPU data from all the established frameworks was obtained on a single Titan Black NVIDIA GPU. Our implementation ran on single a latedays node CPU.  This estimated comparison shows that our parallel FFT algorithm is 3x as fast as Caffe's convolution and 2x as fast as cudaConvNet's. Our implementation is approximately as fast Facebook's recently released FFT implementation.</p>
 <div>
