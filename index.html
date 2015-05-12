@@ -45,11 +45,12 @@
 <a href="checkpoint.html">Checkpoint</a>
 
 <h3>Summary</h3>
-<p>Neurophi is a C++ framework with a MATLAB interface for doing fast, parallel convolutional neural network (CNN) training, particularly for large, high-res images. sizes such as those in <a href="http://www.image-net.org/">ImageNet</a>, one of the premier neural network training image sets.</p>
+<p>Neurophi is a C++ framework with a MATLAB interface for doing fast, parallel convolutional neural network (CNN) training, particularly for large, high-res images.</p>
 <p></p>
 
 <h3>Motivation</h3>
-<p>sizes such as those in <a href="http://www.image-net.org/">ImageNet</a>, one of the premier neural network training image sets. Unlike the existing parallel CNN training frameworks that rely on CUDA and GPU computation, NeuroPhi's target hardware is a CPU and Intel Xeon Phi Coprocessor. NeuroPhi therefore supports code written for standard x86 architecture and can be extended using standard C++ parallelization tools including OpenMP, Cilk, and ISPC. NeuroPhi differentiates itself from existing parallel CNN training frameworks by computing convolutions in the Fourier domain, which is optimal for large images and kernels.</p>
+<p>There is increasing interest in classifying large, high-resolution images. Social networking sites like Facebook must do fast, automated facial recognition of user-uploaded photos. As a result, the <a href="http://www.image-net.org/">ImageNet</a> database of large images is replacing many legacy databases of 32x32 images to become the new standard for training neural networks to do image classification. In some applications such as image denoising, it also beneficial to convolve an image with a large filter. However, many existing parallel CNN training frameworks, including Caffe and CudaConvnet, continue to optimize their convolutions for small images and kernels. NeuroPhi differentiates itself from existing parallel CNN training frameworks by computing convolutions in the Fourier domain instead of the time domain, which is optimal for large images and kernels. 
+Unlike the existing parallel CNN training frameworks that rely on CUDA and GPU computation, NeuroPhi's target hardware is a CPU and Intel Xeon Phi Coprocessor. Neural network operations are computationally dense and highly parallelizable; as GPU core counts continue to increase, GPU ANN training is not compute limited, but bandwith limited by the rate at which data can be offloaded to the GPU. The Xeon Phi coprocessor, Intel's competitor to NVIDIA's Tesla, supports code written for x86  architecture, and therefore has the potential to run ANN training algorithms with fewer bandwidth limited offloads. By writing NeuroPhi for CPU and Xeon Phis, we also give users the convenience of extending the framework with standard C++ parallelization tools including OpenMP, Cilk, and ISPC.</p>
 
 
 <h3>Background</h3>
