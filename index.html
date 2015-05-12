@@ -62,7 +62,7 @@ A common supervised ANN training algorithm known as backpropagation iteratively 
 </ul>
 
 <p>
-Convolutional neural networks are a subclass of feed-forward ANNs that reduce the number of parameters required to do efficient feature extraction by applying the same filter(s) to several contiguous regions of an image. The feature extraction phase of the learning process may have many layers, including:
+Convolutional neural networks are a subclass of feed-forward ANNs that reduce the number of parameters required to do efficient feature extraction by applying the same filter(s) to several contiguous regions of an image. The feature extraction phase of the learning process may have many layers, including, most notably:
 </p>
 
 <b>Convolutional layers</b>
@@ -90,15 +90,18 @@ end
 </p>
 
 </br>
-<b>Pooling layer</b>
+<b>Pooling layers</b>
 <p>
   In order to reduce output variance, pooling layers simply take the max or average value of a feature over a region of the image. This ensures that the network will have the same output for small translations of the input image.
 </p>
 
 </br>
-<b>Fully connected</b>
 <p>
-This is a classic artificial neural network layer, visualized below:
+The feature extraction layers are followed classification architecture, which generally consists of...
+</p>
+<b>Fully connected layers</b>
+<p>
+These layers consist of the classic artificial neural network computational units with all-to-all connections between layers:
 </p>
 </br>
 <img src="fully_connected.png">
