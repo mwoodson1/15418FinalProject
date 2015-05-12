@@ -121,9 +121,14 @@ These layers consist of the classic artificial neural network computational unit
 <p>One common complaint of the FFT convolution implementation is that it doubles the memory useage of the convolution operation, since the convolution kernel must be padded to match the size of the input. However, a trick can be employed for convolutions applied to images. A convolution input typically has a real and imaginary component. Since images have only real components, the expanded kernel can be made to occupy the "complex" portion of the image. This halves the memory useage of the computation and approximately halves the latency of the operation, since only one FFT is now required.</p>
 <p>Another important optimization for a parallel CNN training framework is concurrent training on multiple images, known as parallel batch processing. New network weights are calculated concurrently over multiple images, and the weights from several images are then reduced so that a single weight change is applied to the network for a batch of images. This can be acheived by multithreading image computations through the network and heeding the critical region in which weight computations across images (threads) are summed.</p>
 <p></p>
+<div>
+    <a href="https://plot.ly/~dmrager/176/" target="_blank" title="Memory usage relative to Image Size vs Time" style="display: block; text-align: center;"><img src="https://plot.ly/~dmrager/176.png" alt="Memory usage relative to Image Size vs Time" style="max-width: 100%;width: 525px;"  width="525" onerror="this.onerror=null;this.src='https://plot.ly/404.png';" /></a>
+    <script data-plotly="dmrager:176" src="https://plot.ly/embed.js" async></script>
+</div>
+<p></p>
 <h3>Results</h3>
 All results below were obtained by running code on a single node of <code>latedays</code>, on two, six-core Xeon e5-2620 v3 processors.
-
+<p></p>
 <p>We compared three implementations of image convolution: 1) the naive, time domain implementation pictured in the  background section 2) A recursive FFT implementation of convolution, new to NeuroPhi, and 3) An unrolled FFT implementation of convolution, new to NeuroPhi. Convolution runtimes on 512x512 pixel images (roughly the average size of images in the ImagNet database) for serial versions of the three algorithms as a function of kernel size are shown below. While runtime quickly blows up for large kernel sizes in the time domain, it remains fairly constant over kernel sizes in the two Fourier domain algorithms.</p>
 <div>
     <a href="https://plot.ly/~dmrager/135/" target="_blank" title="Serial Convolution Implementations" style="display: block; text-align: center;"><img src="https://plot.ly/~dmrager/135.png" alt="Serial Convolution Implementations" style="max-width: 100%;width: 464px;"  width="464" onerror="this.onerror=null;this.src='https://plot.ly/404.png';" /></a>
