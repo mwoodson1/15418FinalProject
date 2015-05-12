@@ -37,7 +37,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #endif
 
 void StartTimer();
-void MeasureTime(std::string msg);
+void MeasureTime(std::string msg, int col);
+void SaveTimeArray();
 
 bool mexIsStruct(const mxArray *mx_array);
 bool mexIsCell(const mxArray *mx_array);

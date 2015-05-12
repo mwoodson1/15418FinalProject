@@ -18,36 +18,72 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "mex_util.h"
+#include <iostream> 
+#include <fstream> 
 
 static clock_t _start_timer_time = 0;
+static int timeLogCount[7]={0};
+static double timeLog[50000][7];
+
 
 void StartTimer() {
-  if (print < 2) return;
+  //if (print < 2) return;
+  // double convLayerTimeLog[50000]; //set up timer array
+  //may eventually want to make this 2 col array to time forwards and backwards passes of layer_c
   _start_timer_time = std::clock();
+  /*
+  for (int ii=0; ii<8; ii++){
+    timeLogCount[ii]=0;
+    mexPrintMsg("timeLogCount[ii]: ",timeLogCount[ii]);
+
+  }
+  */
 }
 
-void MeasureTime(std::string msg) {
-  if (print < 2) return;
+void  MeasureTime(std::string msg, int col) {
+  //if (print < 2) return;
   clock_t t0 = _start_timer_time;
   clock_t t = std::clock();
   double d = double(t - t0);
-  mexPrintMsg(msg, d);
+  double dSec = d/CLOCKS_PER_SEC;
+  //mexPrintMsg(msg, dSec);
+  //mexPrintMsg("Col:",col);
+  timeLog[timeLogCount[col]][col]=dSec;
+  //mexPrintMsg("timeLogCount[col]: ",timeLogCount[col]);
+  timeLogCount[col]=timeLogCount[col]+1;
 }
 
-bool mexIsStruct(const mxArray *mx_array) {	
+void SaveTimeArray() {
+
+  std::ofstream timeLogFile;
+  timeLogFile.open("timeLogFile.txt");
+  //mexPrintMsg("Opened file");
+  int twoTimesBatches = timeLogCount[0];
+  //mexPrintMsg("twoTimesBatches: ",twoTimesBatches);
+  for(int i=0; i<twoTimesBatches; i++){
+
+    timeLogFile << timeLog[i][0] << "," << timeLog[i][1] << "," << timeLog[i][2] << "," << timeLog[i][3] << "," << timeLog[i][4] << "," << timeLog[i][5] << "," << timeLog[i][6] << "," << timeLog[i][7] << std::endl;
+  }
+
+  timeLogFile.close();
+  
+}
+
+
+bool mexIsStruct(const mxArray *mx_array) { 
   mexAssert(mx_array != NULL && !mxIsEmpty(mx_array), "In 'mexIsStruct' the array is NULL or empty");
   return mxIsStruct(mx_array);
 }
 
-bool mexIsCell(const mxArray *mx_array) {	
+bool mexIsCell(const mxArray *mx_array) { 
   mexAssert(mx_array != NULL && !mxIsEmpty(mx_array), "In 'mexIsCell' the array is NULL or empty");
   return mxIsCell(mx_array);
 }
 
 bool mexIsField(const mxArray *mx_array, const char *fieldname) {
-	mexAssert(mexIsStruct(mx_array), "In 'mexIsField' the array in not a struct");  
-	const mxArray* mx_field = mxGetField(mx_array, 0, fieldname);
-	return (mx_field != NULL);  
+  mexAssert(mexIsStruct(mx_array), "In 'mexIsField' the array in not a struct");  
+  const mxArray* mx_field = mxGetField(mx_array, 0, fieldname);
+  return (mx_field != NULL);  
 }
 
 bool mexIsString(const mxArray *mx_array) {
@@ -62,12 +98,12 @@ const mxArray* mexGetCell(const mxArray *mx_array, size_t ind) {
   return mxGetCell(mx_array, ind);  
 }
 
-const mxArray* mexGetField(const mxArray *mx_array, const char *fieldname) {	  
+const mxArray* mexGetField(const mxArray *mx_array, const char *fieldname) {    
   mexAssert(mexIsStruct(mx_array), "In 'mexGetField' the array in not a struct");
-  const mxArray* mx_field = mxGetField(mx_array, 0, fieldname);	  
+  const mxArray* mx_field = mxGetField(mx_array, 0, fieldname);   
   std::string fieldname_str(fieldname); 
-	mexAssert(mx_field != NULL, fieldname + std::string(" field missing!!\n"));  
-	return mx_field;  
+  mexAssert(mx_field != NULL, fieldname + std::string(" field missing!!\n"));  
+  return mx_field;  
 }
 
 size_t mexGetDimensionsNum(const mxArray *mx_array) {
@@ -76,11 +112,10 @@ size_t mexGetDimensionsNum(const mxArray *mx_array) {
 }
 
 std::vector<size_t> mexGetDimensions(const mxArray *mx_array) {  
-  //mexAssert(mx_array != NULL, "mx_array in 'mexGetDimentions' is NULL");	
+  //mexAssert(mx_array != NULL, "mx_array in 'mexGetDimentions' is NULL");  
   size_t dimnum = mexGetDimensionsNum(mx_array);
   std::vector<size_t> dim(dimnum);
   const mwSize *pdim = mxGetDimensions(mx_array);
-  #pragma vector
   for (size_t i = 0; i < dimnum; ++i) {
     dim[i] = (size_t) pdim[i];    
   }
@@ -90,7 +125,6 @@ std::vector<size_t> mexGetDimensions(const mxArray *mx_array) {
 size_t mexGetNumel(const mxArray *mx_array) {
   std::vector<size_t> dim = mexGetDimensions(mx_array);
   size_t numel = 1;
-  #pragma vector
   for (size_t i = 0; i < dim.size(); ++i) {
     numel *= dim[i];
   }
@@ -108,14 +142,14 @@ std::string mexGetString(const mxArray *mx_array) {
 
 ftype* mexGetPointer(const mxArray *mx_array) {  
   mexAssert(mx_array != NULL, "mx_array in 'mexGetPointer' is NULL");
-	mexAssert(mxGetClassID(mx_array) == MEX_CLASS,
+  mexAssert(mxGetClassID(mx_array) == MEX_CLASS,
     "In 'mexGetPointer' mx_array is of the wrong type");
   return (ftype*) mxGetData(mx_array);
 }
 
 ftype mexGetScalar(const mxArray *mx_array) {  
   mexAssert(mx_array != NULL, "mx_array in 'mexGetScalar' is NULL");
-	mexAssert(mxIsNumeric(mx_array), "In 'mexGetScalar' mx_array is not numeric");
+  mexAssert(mxIsNumeric(mx_array), "In 'mexGetScalar' mx_array is not numeric");
   if (mxGetClassID(mx_array) == mxSINGLE_CLASS) {
     float *pdata = (float*) mxGetData(mx_array);
     return (ftype) pdata[0];    
@@ -158,29 +192,29 @@ void mexGetMatrix(const mxArray *mx_array, MatCPU &mat) {
 mxArray* mexNewMatrix(size_t size1, size_t size2) {
   mwSize ndims = 2, dims[2];
   dims[0] = size1; dims[1] = size2;    
-  mxArray *mx_array = mxCreateNumericArray(ndims, dims, MEX_CLASS, mxREAL);	
+  mxArray *mx_array = mxCreateNumericArray(ndims, dims, MEX_CLASS, mxREAL); 
   return mx_array;
 }
 
 mxArray* mexSetScalar(ftype scalar) {  
   mxArray *mx_scalar = mexNewMatrix(1, 1);
-	ftype *pdata = (ftype*) mxGetData(mx_scalar);
-	pdata[0] = scalar;
-	return mx_scalar;
+  ftype *pdata = (ftype*) mxGetData(mx_scalar);
+  pdata[0] = scalar;
+  return mx_scalar;
 }
 
-mxArray* mexSetVector(const std::vector<ftype> &vect) {  	
+mxArray* mexSetVector(const std::vector<ftype> &vect) {   
   mxArray *mx_array = mexNewMatrix(vect.size(), 1);
-	ftype *pdata = (ftype*) mxGetData(mx_array);
+  ftype *pdata = (ftype*) mxGetData(mx_array);
   for (size_t i = 0; i < vect.size(); ++i) {
     pdata[i] = vect[i];
   }
-	return mx_array;  
+  return mx_array;  
 }
 
-mxArray* mexSetMatrix(const MatCPU &mat) {			
+mxArray* mexSetMatrix(const MatCPU &mat) {      
   mxArray *mx_array = mexNewMatrix(mat.size1(), mat.size2());  
-	ftype *pdata = (ftype*) mxGetData(mx_array);  
+  ftype *pdata = (ftype*) mxGetData(mx_array);  
   //mexAssert(mat.order() == kMatlabOrder, 
   //  "In mexSetMatrix the order should coincide with kMatlabOrder");
   if (mat.order () == kMatlabOrder) {

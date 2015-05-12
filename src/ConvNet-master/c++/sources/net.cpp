@@ -25,6 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "layer_n.h"
 #include "layer_s.h"
 #include "layer_f.h"
+#include <omp.h>
 
 Net::Net() {
   //mexAssert(kDefaultOrder == false, "kDefaultOrder should be false");  
@@ -115,13 +116,13 @@ void Net::Train(const mxArray *mx_data, const mxArray *mx_labels) {
     if (params_.shuffle_) {
       Shuffle(data_, labels_);      
     }
-    StartTimer();
+    //StartTimer();
     //MatGPU::StartCudaTimer();
     size_t offset = 0;
-#pragma loop_count(469)
-    for (size_t batch = 0; batch < numbatches; ++batch) {
-      std::cout << "max batches is" << numbatches << std::endl;
-      std::cout << batch << " and " << offset << std::endl;
+//#pragma loop_count(100)
+    for (size_t batch = 0; batch < 10; ++batch) {
+      //std::cout << "max batches is" << numbatches << std::endl;
+      //std::cout << batch << " and " << offset << std::endl;
       size_t batchsize = MIN(train_num - offset, params_.batchsize_);
       offset = batch*batchsize;
       UpdateWeights(epoch, false);
@@ -144,19 +145,20 @@ void Net::Train(const mxArray *mx_data, const mxArray *mx_labels) {
       }
       UpdateWeights(epoch, true); 
       //offset += batchsize;
-      if (params_.verbose_ == 2) {
+      //if (params_.verbose_ == 2) {
         mexPrintInt("Epoch", (int) epoch + 1);
         mexPrintInt("Batch", (int) batch + 1);
-      }
+      //}
     } // batch       
     //MatGPU::MeasureCudaTime("totaltime");
-    MeasureTime("totaltime");
+    //MeasureTime("totaltime");
     if (params_.verbose_ == 1) {
       mexPrintInt("Epoch", (int) epoch + 1);
     }        
   } // epoch  
   trainerrors_ /= (ftype) numbatches;
-  //mexPrintMsg("Training finished");
+  SaveTimeArray();
+  mexPrintMsg("Training finished");
 }
 
 void Net::Classify(const mxArray *mx_data, mxArray *&mx_pred) {  
@@ -178,7 +180,7 @@ void Net::Classify(const mxArray *mx_data, mxArray *&mx_pred) {
   Mat data_batch, pred_batch;    
   for (size_t epoch = 0; epoch < params_.test_epochs_; ++epoch) {
     size_t offset = 0;
-    for (size_t batch = 0; batch < numbatches; ++batch) {
+    for (size_t batch = 0; batch < 4; ++batch) {
       size_t batchsize = MIN(test_num - offset, params_.batchsize_);
       data_batch.resize(batchsize, data_.size2());
       SubSet(data_, data_batch, offset, true);    

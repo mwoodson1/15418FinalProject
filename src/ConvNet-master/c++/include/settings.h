@@ -23,7 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // COMP_REGIME = 0 -> CPU
 // COMP_REGIME = 1 -> MULTITHREAD CPU
 // COMP_REGIME = 2 -> GPU
-#define COMP_REGIME 2
+#define COMP_REGIME 1
 
 // USE_CUDNN = -1 -> NOT APPLICABLE
 // USE_CUDNN = 0 -> NO

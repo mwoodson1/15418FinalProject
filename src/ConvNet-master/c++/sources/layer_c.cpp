@@ -19,6 +19,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <omp.h>
 #include "layer_c.h"
+#include "mex_util.h"
+#include <cilk/cilk.h>
+#include <cilk/reducer_opadd.h>
 
 LayerConv::LayerConv() {
   type_ = "c";
@@ -98,6 +101,7 @@ void LayerConv::Init(const mxArray *mx_layer, Layer *prev_layer) {
 }
     
 void LayerConv::Forward(Layer *prev_layer, int passnum) {
+  StartTimer();
   batchsize_ = prev_layer->batchsize_;
   if (passnum == 3) {
     Swap(activ_mat_, first_mat_);    
@@ -110,11 +114,11 @@ void LayerConv::Forward(Layer *prev_layer, int passnum) {
     InitMaps(activ_mat_, mapsize_, activ);    
     activ_mat_.assign(0);    
     #if COMP_REGIME == 1
-      #pragma omp parallel for
+      #pragma omp parallel for num_threads(12)
     #endif    
     for (int k = 0; k < batchsize_; ++k) {
       #if COMP_REGIME == 1
-      #pragma omp parallel for
+      //#pragma omp parallel for
       #endif
       for (size_t i = 0; i < outputmaps_; ++i) {        
         for (size_t j = 0; j < prev_layer->outputmaps_; ++j) {
@@ -139,9 +143,11 @@ void LayerConv::Forward(Layer *prev_layer, int passnum) {
     }
   }  
   activ_mat_.Validate();
+  MeasureTime("Forwards Conv Layer",0);
 }
 
 void LayerConv::Backward(Layer *prev_layer) {
+  StartTimer();
   prev_layer->deriv_mat_.resize(prev_layer->batchsize_, prev_layer->length_);
   #if COMP_REGIME != 2
     std::vector< std::vector<Mat> > prev_deriv, filters, deriv;
@@ -154,11 +160,11 @@ void LayerConv::Backward(Layer *prev_layer) {
     }
     prev_layer->deriv_mat_.assign(0);    
     #if COMP_REGIME == 1
-      #pragma omp parallel for
+      #pragma omp parallel for num_threads(12) schedule(static,10)
     #endif  
     for (int k = 0; k < batchsize_; ++k) {
       #if COMP_REGIME == 1
-      #pragma omp parallel for
+      //#pragma omp parallel for
       #endif
       for (size_t i = 0; i < outputmaps_; ++i) {      
         for (size_t j = 0; j < prev_layer->outputmaps_; ++j) {                        
@@ -173,9 +179,11 @@ void LayerConv::Backward(Layer *prev_layer) {
             prev_layer->mapsize_, filtersize_[0], padding_[0], !unshared_);        
   #endif
   prev_layer->deriv_mat_.Validate();
+  MeasureTime("Backwards Conv Layer",1);
 }
 
 void LayerConv::CalcWeights(Layer *prev_layer, int passnum) {
+  StartTimer();
 
   if (passnum < 2) return;
   Mat weights_der;
@@ -191,20 +199,22 @@ void LayerConv::CalcWeights(Layer *prev_layer, int passnum) {
     InitMaps(deriv_mat_, mapsize_, deriv);
     size_t i,j;
     int k;
+    //#pragma omp parallel{ //for num_threads(12) private(fil_der)
     for (i = 0; i < outputmaps_; ++i) {
-      for (j = 0; j < prev_layer->outputmaps_; ++j) {                
+      for (j = 0; j < prev_layer->outputmaps_; ++j) {
+
         Mat fil_der(filtersize_);
         fil_der.assign(0);      
         #if COMP_REGIME == 1
-          #pragma omp parallel for
         #endif
         for (k = 0; k < batchsize_; ++k) {
           Mat ker_mat(filtersize_);
-          Filter(prev_activ[k][j], deriv[k][i], padding_, false, ker_mat);        
+          Filter(prev_activ[k][j], deriv[k][i], padding_, false, ker_mat);      
           #if COMP_REGIME == 1
-            #pragma omp critical
+            //#pragma omp critical
           #endif
-          fil_der += ker_mat;          
+          fil_der += ker_mat; 
+                   
         }
         filters_der[i][j] = fil_der;        
       }        
@@ -227,12 +237,13 @@ void LayerConv::CalcWeights(Layer *prev_layer, int passnum) {
     }
     (biases_.der() /= (ftype) batchsize_) *= bias_coef_;
     biases_.der().Validate();
-  }   
+  }
+  MeasureTime("CalcWeights Conv Layer",2);
 }
 
 void LayerConv::InitWeights(Weights &weights, size_t &offset, bool isgen) {  
   size_t num_weights = length_prev_;
-  #pragma simd
+  #pragma omp parallel for reduction(*:num_weights)
   for (size_t i = 0; i < numdim_; ++i) {
     num_weights *= filtersize_[i];
   }
@@ -272,7 +283,7 @@ void LayerConv::GetWeights(Mat &weights, size_t &offset) const {
 
 size_t LayerConv::NumWeights() const {
   size_t num_weights = length_prev_;
-  #pragma vector
+  #pragma omp parallel for reduction(*:num_weights)
   for (size_t i = 0; i < numdim_; ++i) {
     num_weights *= filtersize_[i];
   }

@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "layer_j.h"
+#include <omp.h>
 
 LayerJitt::LayerJitt() {
   type_ = "j";
@@ -76,7 +77,7 @@ void LayerJitt::Init(const mxArray *mx_layer, Layer *prev_layer) {
   } else {  
     // check that the transformed image is always inside the original one
     std::vector<ftype> maxsize(numdim_, 0);
-    #pragma simd
+    //#pragma simd
     for (size_t i = 0; i < numdim_; ++i) {
       maxsize[i] = (ftype) (mapsize_[i] - 1) * scale_[i];      
     }
@@ -95,7 +96,7 @@ void LayerJitt::Init(const mxArray *mx_layer, Layer *prev_layer) {
       maxsize[1] = maxrad * maxcos;    
     }
     std::vector<ftype> oldmapsize(numdim_, 0);
-    #pragma simd
+    //#pragma simd
     for (size_t i = 0; i < numdim_; ++i) { 
       oldmapsize[i] = (ftype) prev_layer->mapsize_[i];
     }
@@ -141,7 +142,7 @@ void LayerJitt::Forward(Layer *prev_layer, int passnum) {
     InitMaps(prev_layer->activ_mat_, prev_layer->mapsize_, prev_activ);
     InitMaps(activ_mat_, mapsize_, activ);    
     #if COMP_REGIME == 1
-      #pragma omp parallel for
+      //#pragma omp parallel for
     #endif
     for (int k = 0; k < batchsize_; ++k) {  
       std::vector<ftype> shift(numdim_, 0);

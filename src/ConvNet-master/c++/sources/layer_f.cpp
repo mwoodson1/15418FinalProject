@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "layer_f.h"
+#include "mex_util.h"
 
 LayerFull::LayerFull() {
   type_ = "f"; 
@@ -57,6 +58,7 @@ void LayerFull::Init(const mxArray *mx_layer, Layer *prev_layer) {
 }
 
 void LayerFull::Forward(Layer *prev_layer, int passnum) {
+  StartTimer();
   batchsize_ = prev_layer->batchsize_;
   if (passnum == 3) {
     Swap(activ_mat_, first_mat_);    
@@ -103,9 +105,11 @@ void LayerFull::Forward(Layer *prev_layer, int passnum) {
     mexPrintMsg("Vertical", m(i, 0));    
   }
   }*/
+  MeasureTime("Forwards Full Layer",3);
 }
 
 void LayerFull::Backward(Layer *prev_layer) {
+  StartTimer();
   prev_layer->deriv_mat_.resize(prev_layer->batchsize_, prev_layer->length_);
   Prod(deriv_mat_, false, weights_.get(), false, prev_layer->deriv_mat_);  
   if (prev_layer->type_ == "f") {
@@ -115,10 +119,11 @@ void LayerFull::Backward(Layer *prev_layer) {
     }  
   }
   prev_layer->deriv_mat_.Validate();
+  MeasureTime("Backwards Full Layer",4);
 }
 
 void LayerFull::CalcWeights(Layer *prev_layer, int passnum) {
-
+  StartTimer();
   if (passnum < 2) return;
   Mat weights_der;
   if (passnum == 2) {
@@ -134,6 +139,7 @@ void LayerFull::CalcWeights(Layer *prev_layer, int passnum) {
   }
   weights_der /= (ftype) batchsize_;
   weights_der.Validate();
+  MeasureTime("CalcWeights Full Layer",5);
 }
 
 void LayerFull::InitWeights(Weights &weights, size_t &offset, bool isgen) {

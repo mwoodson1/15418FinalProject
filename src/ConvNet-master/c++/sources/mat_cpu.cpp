@@ -20,6 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "mat_cpu.h"
 #include <algorithm>
 #include <cmath>
+#include <omp.h>
 
 std::default_random_engine MatCPU::_generator;
   
@@ -215,7 +216,7 @@ void Swap(MatCPU &a, MatCPU &b) {
 // data functions
 
 MatCPU& MatCPU::assign(ftype val) {
-  #pragma simd
+  #pragma vector
   for (size_t i = 0; i < size1_ * size2_; ++i) {
     data(i) = val;
   }
@@ -243,7 +244,7 @@ MatCPU& MatCPU::operator += (const MatCPU &a) {
     "In MatCPU::+= the sizes of matrices do not correspond");
   size_t i,j;
   for (i = 0; i < size1_; ++i) {
-    #pragma simd
+    #pragma vector
     for (j = 0; j < size2_; ++j) {
       data(i, j) += a(i, j);
     }
@@ -256,7 +257,7 @@ MatCPU& MatCPU::operator -= (const MatCPU &a) {
     "In MatCPU::-= the sizes of matrices do not correspond");
   size_t i,j;
   for (i = 0; i < size1_; ++i) {
-    #pragma simd
+    #pragma vector
     for (j = 0; j < size2_; ++j) {
       data(i, j) -= a(i, j);
     }
@@ -269,7 +270,7 @@ MatCPU& MatCPU::operator *= (const MatCPU &a) {
     "In 'MatCPU::*=' the matrices are of the different size");
   size_t i,j;
   for (i = 0; i < size1_; ++i) {
-    #pragma simd
+    #pragma vector
     for (j = 0; j < size2_; ++j) {
       data(i, j) *= a(i, j);
     }
@@ -282,7 +283,7 @@ MatCPU& MatCPU::operator /= (const MatCPU &a) {
     "In 'MatCPU::/=' the matrices are of the different size");
   size_t i,j;
   for (i = 0; i < size1_; ++i) {
-    #pragma simd
+    #pragma vector
     for (j = 0; j < size2_; ++j) {
       data(i, j) /= a(i, j);
     }
@@ -291,7 +292,7 @@ MatCPU& MatCPU::operator /= (const MatCPU &a) {
 }
 
 MatCPU& MatCPU::operator += (ftype a) {
-  #pragma simd
+  #pragma vector
   for (size_t i = 0; i < size1_ * size2_; ++i) {
     data(i) += a;
   }
@@ -299,7 +300,7 @@ MatCPU& MatCPU::operator += (ftype a) {
 }
 
 MatCPU& MatCPU::operator -= (ftype a) {
-  #pragma simd
+  #pragma vector
   for (size_t i = 0; i < size1_ * size2_; ++i) {
     data(i) -= a;
   }
@@ -307,7 +308,7 @@ MatCPU& MatCPU::operator -= (ftype a) {
 }
 
 MatCPU& MatCPU::operator *= (ftype a) {
-  #pragma simd
+  #pragma vector
   for (size_t i = 0; i < size1_ * size2_; ++i) {
     data(i) *= a;
   }
@@ -315,7 +316,7 @@ MatCPU& MatCPU::operator *= (ftype a) {
 }
 
 MatCPU& MatCPU::operator /= (ftype a) {
-  #pragma simd
+  #pragma vector
   for (size_t i = 0; i < size1_ * size2_; ++i) {
     data(i) /= a;
   }
@@ -336,7 +337,7 @@ MatCPU& MatCPU::Sign() {
 }
 
 MatCPU& MatCPU::Sqrt() {
-  #pragma parallel for
+  ////#pragma omp parallel for
   for (size_t i = 0; i < size1_ * size2_; ++i) {
     data(i) = (ftype) sqrt((double) data(i));
   }
@@ -344,7 +345,7 @@ MatCPU& MatCPU::Sqrt() {
 }
 
 MatCPU& MatCPU::Exp() {
-  #pragma parallel for
+  ////#pragma omp parallel for
   for (size_t i = 0; i < size1_ * size2_; ++i) {
     data(i) = exp(data(i));
   }
@@ -352,7 +353,7 @@ MatCPU& MatCPU::Exp() {
 }
 
 MatCPU& MatCPU::Log() {
-  #pragma parallel for
+  ////#pragma omp parallel for
   for (size_t i = 0; i < size1_ * size2_; ++i) {
     data(i) = log(data(i));
   }
@@ -363,18 +364,18 @@ MatCPU& MatCPU::SoftMax() {
   size_t i,j;
   for (i = 0; i < size1_; ++i) {
     ftype max_val = data(i, 0);
-    #pragma vector
+    ////#pragma vector
     for (j = 1; j < size2_; ++j) {
       if (data(i, j) > max_val) max_val = data(i, j);
     }
     ftype sum_exp = 0;
-    #pragma simd
+    #pragma vector
     for (j = 0; j < size2_; ++j) {
       sum_exp += exp(data(i, j) - max_val);
     }
     ftype log_sum_exp = log(sum_exp) + max_val;
     
-    #pragma simd
+    #pragma vector
     for (j = 0; j < size2_; ++j) {
       data(i, j) = exp(data(i, j) - log_sum_exp);
     }
@@ -386,11 +387,11 @@ MatCPU& MatCPU::SoftDer(const MatCPU& a) {
   size_t i,j;
   for (i = 0; i < size1_; ++i) {
     ftype comsum = 0;
-    #pragma simd
+    ////#pragma simd
     for (j = 0; j < size2_; ++j) {
       comsum += data(i, j) * a(i, j);
     }
-    #pragma vector
+    ////#pragma vector
     for (j = 0; j < size2_; ++j) {
       data(i, j) = a(i, j) * (data(i, j) - comsum);
     }
@@ -399,7 +400,7 @@ MatCPU& MatCPU::SoftDer(const MatCPU& a) {
 }
 
 MatCPU& MatCPU::Sigmoid() {
-  #pragma vector
+  ////#pragma vector
   for (size_t i = 0; i < size1_ * size2_; ++i) {
     data(i) = (1 + tanh(data(i)/2)) / 2;
     //data(i) = 1 / (1 + exp(-data(i)));
@@ -411,9 +412,9 @@ MatCPU& MatCPU::SigmDer(const MatCPU& a) {
   mexAssert(size1_ == a.size1_ && size2_ == a.size2_, 
     "In 'MatCPU::SigmDer' the matrices are of the different size");
   size_t i,j;
-  #pragma vector
+  ////#pragma vector
   for (i = 0; i < size1_; ++i) {
-    #pragma simd
+    ////#pragma simd
     for (j = 0; j < size2_; ++j) {
       data(i, j) *= a(i, j) * (1 - a(i, j));      
     }
@@ -425,9 +426,9 @@ MatCPU& MatCPU::CondAssign(const MatCPU &condmat, bool incase, ftype threshold, 
   mexAssert(size1_ == condmat.size1_ && size2_ == condmat.size2_,
     "In MatCPU::CondAssign the sizes of matrices do not correspond");
   size_t i,j;
-  #pragma vector
+  ////#pragma vector
   for (i = 0; i < size1_; ++i) {
-    #pragma simd
+    ////#pragma simd
     for (j = 0; j < size2_; ++j) {
       if (incase == (condmat(i, j) > threshold)) data(i, j) = a; // xor      
     }
@@ -439,9 +440,9 @@ MatCPU& MatCPU::CondAdd(const MatCPU &condmat, bool incase, ftype threshold, fty
   mexAssert(size1_ == condmat.size1_ && size2_ == condmat.size2_,
     "In MatCPU::CondAdd the sizes of matrices do not correspond");
   size_t i,j;
-  #pragma vector
+  ////#pragma vector
   for (i = 0; i < size1_; ++i) {
-    #pragma simd
+    ////#pragma simd
     for (j = 0; j < size2_; ++j) {
       if (incase == (condmat(i, j) > threshold)) data(i, j) += a; // xor      
     }
@@ -453,9 +454,9 @@ MatCPU& MatCPU::CondMult(const MatCPU &condmat, bool incase, ftype threshold, ft
   mexAssert(size1_ == condmat.size1_ && size2_ == condmat.size2_,
     "In MatCPU::CondMult the sizes of matrices do not correspond");
   size_t i,j;
-  #pragma vector
+  ////#pragma vector
   for (i = 0; i < size1_; ++i) {
-    #pragma simd
+    ////#pragma simd
     for (j = 0; j < size2_; ++j) {
       if (incase == (condmat(i, j) > threshold)) data(i, j) *= a; // xor      
     }
@@ -469,9 +470,9 @@ MatCPU& MatCPU::AddVect(const MatCPU &vect, size_t dim) {
     mexAssert(vect.size1_ == 1, "In 'MatCPU::AddVect' the first dimension must be 1"); 
     mexAssert(size2_ == vect.size2_,
       "In 'MatCPU::AddVect' the second dimension of matrix and length of vector are of the different size");
-    #pragma vector
+    ////#pragma vector
     for (i = 0; i < size1_; ++i) {
-      #pragma vector
+      ////#pragma vector
       for (j = 0; j < size2_; ++j) {
         data(i, j) += vect(0, j);
       }
@@ -480,9 +481,9 @@ MatCPU& MatCPU::AddVect(const MatCPU &vect, size_t dim) {
     mexAssert(vect.size2_ == 1, "In 'MatCPU::AddVect' the second dimension must be 1"); 
     mexAssert(size1_ == vect.size1_,
       "In 'MatCPU::AddVect' the first dimension of matrix and length of vector are of the different size");
-    #pragma vector
+    ////#pragma vector
     for (i = 0; i < size1_; ++i) {
-      #pragma vector 
+      ////#pragma vector 
       for (j = 0; j < size2_; ++j) {
         data(i, j) += vect(i, 0);
       }
@@ -499,9 +500,9 @@ MatCPU& MatCPU::MultVect(const MatCPU &vect, size_t dim) {
     mexAssert(vect.size1_ == 1, "In 'MatCPU::MultVect' the first dimension must be 1"); 
     mexAssert(size2_ == vect.size2_,
       "In 'MatCPU::MultVect' the second dimension of matrix and length of vector are of the different size");
-    #pragma vector
+    //#pragma vector
     for (i = 0; i < size1_; ++i) {
-      #pragma vector
+      //#pragma vector
       for (j = 0; j < size2_; ++j) {
         data(i, j) *= vect(0, j);
       }
@@ -510,9 +511,9 @@ MatCPU& MatCPU::MultVect(const MatCPU &vect, size_t dim) {
     mexAssert(vect.size2_ == 1, "In 'MatCPU::MultVect' the second dimension must be 1"); 
     mexAssert(size1_ == vect.size1_,
       "In 'MatCPU::MultVect' the first dimension of matrix and length of vector are of the different size");
-    #pragma vector
+    //#pragma vector
     for (i = 0; i < size1_; ++i) {
-      #pragma vector
+      //#pragma vector
       for (j = 0; j < size2_; ++j) {
         data(i, j) *= vect(i, 0);
       }
@@ -529,13 +530,13 @@ MatCPU& MatCPU::Normalize(ftype norm) {
   for (i = 0; i < size1_; ++i) {
     ftype curnorm = 0;
     ftype *dptr = data_ + i * size2_;
-    #pragma simd
+    //#pragma simd
     for (j = 0; j < size2_; ++j) {
       curnorm += dptr[j] * dptr[j];
     }
     curnorm = (ftype) sqrt((double) curnorm);
     if (curnorm > kEps) {
-      #pragma simd
+      //#pragma simd
       for (j = 0; j < size2_; ++j) {
         dptr[j] *= (norm / curnorm);
       }
@@ -545,7 +546,7 @@ MatCPU& MatCPU::Normalize(ftype norm) {
 }
 
 MatCPU& MatCPU::Validate() {
-  #pragma vector
+  //#pragma vector
   for (size_t i = 0; i < size1_ * size2_; ++i) {  
     if (-kEps < data(i) && data(i) < kEps) data(i) = 0;
   }
@@ -562,7 +563,7 @@ void Sum(const MatCPU &a, MatCPU &vect, size_t dim) {
       "In Sum the sizes do not correspond each other");    
     vect.assign(0);
     for (i = 0; i < a.size1_; ++i) {
-      #pragma simd
+      #pragma vector
       for (j = 0; j < a.size2_; ++j) {
         vect(0, j) += a(i, j);        
       }
@@ -572,7 +573,7 @@ void Sum(const MatCPU &a, MatCPU &vect, size_t dim) {
       "In Sum the sizes do not correspond each other");    
     vect.assign(0);
     for (i = 0; i < a.size1_; ++i) {
-      #pragma simd
+      #pragma vector
       for (j = 0; j < a.size2_; ++j) {
         vect(i, 0) += a(i, j);        
       }     
@@ -717,9 +718,9 @@ void Prod(const MatCPU &a, bool a_tr, const MatCPU &b, bool b_tr, MatCPU &c) {
   cl.resize(as1, bs2);
   cl.assign(0);
   for (k = 0; k < bs1; ++k) {
-    #pragma vector
+    //#pragma vector
     for (j = 0; j < bs2; ++j) {
-      #pragma vector
+      //#pragma vector
       for (i = 0; i < as1; ++i) {                    
         cl(i, j) += al(i, k) * bl(j, k);            
       }
@@ -739,27 +740,27 @@ void Filter(const MatCPU &image, const MatCPU &filter,
     size_t fsize1 = filter.size1_;
     size_t fsize2 = filter.size2_;
     size_t i,j,u,v;
-    //#pragma omp parallel for
-    #pragma loop_count avg(32)
+    //#pragma omp parallel for private(val) num_threads(12) schedule(static,10)
+    //#pragma loop_count avg(32)
     for (i = 0; i < filtered.size1_; ++i) {
-      //#pragma omp parallel for private(val)
-      #pragma loop_count avg(32)
+      ////#pragma omp parallel for private(val)
+      //#pragma loop_count avg(32)
       for (j = 0; j < filtered.size2_; ++j) {
         val = 0;
         if (!conv) {
-          #pragma loop_count min(3),max(9)
+          //#pragma loop_count min(3),max(9)
           for (u = 0; u < fsize1; ++u) {
-            #pragma loop_count min(3),max(9)
+            #pragma vector
             for (v = 0; v < fsize2; ++v) {
               val += filter(u, v) * image(i + u, j + v);
             }        
           }
         } else {
-    //#pragma vector
-          #pragma loop_count min(3),max(9)
+    ////#pragma vector
+          //#pragma loop_count min(3),max(9)
           for (u = 0; u < fsize1; ++u) {
-    //#pragma vector
-            #pragma loop_count min(3),max(9)
+    #pragma vector
+            //#pragma loop_count min(3),max(9)
             for (v = 0; v < fsize2; ++v) {
               val += filter(fsize1 - 1 - u, fsize2 - 1 - v) * image(i + u, j + v);
             }        
@@ -776,9 +777,10 @@ void Filter(const MatCPU &image, const MatCPU &filter,
     int offs1 = (int) filtered.size1_ - 1 + fsize1 - pad1;
     int offs2 = (int) filtered.size2_ - 1 + fsize2 - pad2;
     int i,j,u,v,minu,minv,maxu,maxv;
-    #pragma omp parallel for
+    //#pragma omp parallel for
+    //#pragma omp parallel for private(val,minu,minv,maxu,maxv) num_threads(12) schedule(static,10)
     for (i = 0; i < filtered.size1_; ++i) {
-      #pragma omp parallel for private(val,minu,minv,maxu,maxv)
+      //#pragma omp parallel for private(val,minu,minv,maxu,maxv)
       for (j = 0; j < filtered.size2_; ++j) {
         int minu = MAX(pad1 - i, 0);
         int minv = MAX(pad2 - j, 0);
@@ -786,7 +788,7 @@ void Filter(const MatCPU &image, const MatCPU &filter,
         int maxv = MIN(offs2 - j, fsize2);
         val = 0;
         if (!conv) {
-	  #pragma vector
+	  //#pragma vector
           for (u = minu; u < maxu; ++u) {
 	    #pragma vector
             for (v = minv; v < maxv; ++v) {
@@ -794,7 +796,7 @@ void Filter(const MatCPU &image, const MatCPU &filter,
             }        
           }
         } else {
-	  #pragma vector
+	  //#pragma vector
           for (int u = minu; u < maxu; ++u) {
 	    #pragma vector
             for (int v = minv; v < maxv; ++v) {
@@ -820,7 +822,7 @@ void Transform(const MatCPU &image, const std::vector<ftype> &shift,
   size_t i,j,xu1,xu2,xp1,xp2;
   ftype xi1,xi2,x1,x2,vl,vh;
   for (i = 0; i < transformed.size1_; ++i) {
-    #pragma omp parallel for
+    //#pragma omp parallel for
     for (j = 0; j < transformed.size2_; ++j) {
       xi1 = (i - n1) * scale[0];
       xi2 = (j - n2) * scale[1];
@@ -947,7 +949,7 @@ void MaxScaleDer(const MatCPU &image, const MatCPU &scaled, MatCPU &scaled_der, 
 
 ftype MatCPU::sum() const {
   ftype matsum = 0;
-  #pragma simd
+  #pragma vector 
   for (size_t i = 0; i < size1_ * size2_; ++i) {
     matsum += data(i);
   }      

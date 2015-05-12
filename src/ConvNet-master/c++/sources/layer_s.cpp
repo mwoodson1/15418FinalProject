@@ -18,6 +18,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "layer_s.h"
+#include "mex_util.h"
+#include <omp.h>
 
 LayerScal::LayerScal() {
   type_ = "s";
@@ -71,7 +73,8 @@ void LayerScal::Init(const mxArray *mx_layer, Layer *prev_layer) {
   }
 }
     
-void LayerScal::Forward(Layer *prev_layer, int passnum) {  
+void LayerScal::Forward(Layer *prev_layer, int passnum) { 
+  StartTimer(); 
   batchsize_ = prev_layer->batchsize_;
   activ_mat_.resize(batchsize_, length_);
   #if COMP_REGIME != 2
@@ -83,11 +86,11 @@ void LayerScal::Forward(Layer *prev_layer, int passnum) {
       InitMaps(deriv_mat_, mapsize_, deriv);    
     }
     #if COMP_REGIME == 1
-      #pragma omp parallel for
+      //#pragma omp parallel for
     #endif  
     for (int k = 0; k < batchsize_; ++k) {
       #if COMP_REGIME == 1
-      #pragma omp parallel for
+      //#pragma omp parallel for
       #endif
       for (size_t i = 0; i < outputmaps_; ++i) {
         if (function_ == "mean") {
@@ -118,9 +121,11 @@ void LayerScal::Forward(Layer *prev_layer, int passnum) {
       }
     }
   #endif
+    MeasureTime("Forwards Scale Layer",6);
 }
 
-void LayerScal::Backward(Layer *prev_layer) {    
+void LayerScal::Backward(Layer *prev_layer) {
+  StartTimer();   
   prev_layer->deriv_mat_.resize(prev_layer->batchsize_, prev_layer->length_);
   #if COMP_REGIME != 2
     std::vector< std::vector<Mat> > prev_activ, activ, prev_deriv, deriv;    
@@ -131,7 +136,7 @@ void LayerScal::Backward(Layer *prev_layer) {
       InitMaps(activ_mat_, mapsize_, activ);    
     }
     #if COMP_REGIME == 1
-      #pragma omp parallel for
+      //#pragma omp parallel for
     #endif
     for (int k = 0; k < batchsize_; ++k) {
       for (size_t i = 0; i < outputmaps_; ++i) {
@@ -181,4 +186,5 @@ void LayerScal::Backward(Layer *prev_layer) {
     mexPrintMsg("Vertical", m(i, 0));    
   }
   }*/
+  MeasureTime("Forwards Scale Layer",7);
 }
