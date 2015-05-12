@@ -169,6 +169,8 @@ All results below were obtained by running code on a single node of <code>lateda
 <h3>Challenges and Future Directions</h3>
 <p>One of the primary challenges of our project was integrating ConvNet's MATLAB frontend with C++ backend code and especially with the Xeon Phi. Though we were able to offload portions of standalone C++ code to the Phi, such as our fft scripts, there were many linking and library issues when trying to integrate the entire MATLAB embedded, ConvNet code base. We believe that parallel batch processing, in particular, could benefit from being run on the many-cored Phi, and would like to extend NeuroPhi to this framework in the future. We would also like to extend our fast FFT convolution implementation to support images that are not powers of two to reduce its memory footprint.</p>
 
+<p>Please find references for this work linked throughout this page, as appropriate.</p>
+
 
 
   </body>
